@@ -295,6 +295,35 @@ a.btn.primary{color:#fff}
 .mplan button:hover{border-color:var(--ro)}
 .mplan li.ok>*{background:#eef8f3;border-color:#c3e5d3}
 .mplan li.ok>* span{color:#16774f}
+/* แถบเครื่องไตเทียม และระบบน้ำเคลื่อนที่: ซ่อนส่วนของระบบน้ำ RO */
+body.equip-mode .stage-bar,body.equip-mode #statusline,body.equip-mode .tables,body.equip-mode .foot{display:none}
+body.equip-mode .panel{max-height:min(86vh,980px)}
+.eqlist{display:grid;gap:8px;margin:6px 0 12px}
+.eqc{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.eqc-b{display:block;width:100%;text-align:left;font:inherit;color:var(--ink);background:none;border:0;padding:10px 12px 8px;cursor:pointer}
+.eqc-b:hover{background:var(--soft)}
+.eqc-h{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:6px}
+.eqc-h b{font-size:15px}
+.eqc-h .chip{margin-left:auto}
+.eqc-h .bdg{height:22px;min-width:22px;font-size:11px}
+.eqdot{width:12px;height:12px;border-radius:50%;background:#19B5A5;display:inline-block}
+.eqc-g{display:grid;grid-template-columns:72px 1fr;gap:6px 8px;align-items:start;font-size:13px}
+.eq-l{color:var(--muted);font-size:12.5px;white-space:nowrap;padding-top:2px}
+.eq-v{display:flex;flex-direction:column;gap:1px;min-width:0}
+.eq-1{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.eq-1 b{font-size:15px}
+.eq-2{font-size:12px;color:var(--muted)}
+.nx-bad{color:var(--bad)}.nx-watch{color:#b06a08}.nx.nx-ok{color:#16774f}.nx{font-weight:700}.eq-2.nx-bad,.eq-2.nx-watch{font-weight:600}
+.eq-none{color:var(--muted)}
+.eqc .ops{display:flex;gap:14px;padding:7px 12px 9px;border-top:1px solid #edf2f5;font-size:13px}
+.rboxes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px}
+.rbox{display:flex;flex-direction:column;align-items:flex-start;gap:3px;border:1px solid var(--line);border-radius:12px;padding:10px 11px;background:var(--soft);min-width:0}
+.rb-h{font-size:12.5px;font-weight:700;color:var(--muted)}
+.rb-v{font-size:14px}.rb-v b{font-size:22px;line-height:1.1;color:var(--ink)}
+.rb-none{color:var(--muted)}
+.rb-d,.rb-n{font-size:12px;color:var(--muted)}
+.rb-n{margin-top:4px}
+.rb-f{font-size:13px;font-weight:600;margin-top:4px}
+@media (max-width:420px){.rboxes{grid-template-columns:1fr}}
 
 </style>
 </head>
@@ -722,7 +751,8 @@ const HD_MACHINES=[{no:4,station:1,badge:'N'},{no:5,station:2,badge:'N'},{no:6,s
 const STATION_NAME={1:'เตียง 1',2:'เตียง 2',3:'เตียง 3',4:'เตียง 4',5:'เก้าอี้ 5',6:'เก้าอี้ 6',7:'ICU ห้อง 5',8:'ICU ห้อง 4'};
 const hdOf=no=>HD_MACHINES.find(m=>m.no===Number(no));
 const hdAtStation=n=>HD_MACHINES.find(m=>m.station===Number(n));
-const PORTO=[{id:'ros1',name:'RO เคลื่อนที่ เครื่องเล็ก 1',short:'RO เล็ก 1',size:'small'},{id:'ros2',name:'RO เคลื่อนที่ เครื่องเล็ก 2',short:'RO เล็ก 2',size:'small'},{id:'rol',name:'RO เคลื่อนที่ เครื่องใหญ่',short:'RO ใหญ่',size:'large'}];
+/* RO เคลื่อนที่ตามตารางเครื่องในแอปผล C/S: UNO 1, UNO 2 (เครื่องเล็ก) และ RO social (เครื่องใหญ่) */
+const PORTO=[{id:'ros1',name:'UNO 1 · RO เคลื่อนที่เครื่องเล็ก',short:'UNO 1',size:'small',re:/uno\s*-?\s*1(?![0-9])/i},{id:'ros2',name:'UNO 2 · RO เคลื่อนที่เครื่องเล็ก',short:'UNO 2',size:'small',re:/uno\s*-?\s*2(?![0-9])/i},{id:'rol',name:'RO social · RO เคลื่อนที่เครื่องใหญ่',short:'RO social',size:'large',re:/social/i}];
 const portoOf=id=>PORTO.find(p=>p.id===id);
 
 /* ---------- ค่าในแบบบันทึกประจำวัน (ชื่อหัวคอลัมน์จับคู่แบบเดียวกับหน้า Dashboard) ----------
@@ -901,13 +931,18 @@ const runStatus=m=>!!m&&(!m.status||m.status==='พร้อมใช้งา�
 function srHealth(m){if(!m)return 'mute';const f=srFilter(m),t=srTests(m.id)[0],s=t?srTestStatus(t).overall:null;
   if(f.state==='over'||s==='fail')return 'bad';if(f.state==='soon'||s==='watch')return 'watch';if(!t&&f.state!=='ok')return 'mute';return 'ok';}
 /* จับคู่เครื่องในผังกับข้อมูลในโชว์รูม: เลือกเองในแผงรายละเอียด หรือจับคู่อัตโนมัติจากหมายเลขในชื่อเครื่อง */
+/* Serial number ของเครื่องจากชื่อจุดในแอปผล C/S เช่น "Dialysate FN No4 :SN 8V5AJX12" */
+const normSN=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+function csSerialOf(no){const L=typeof csLocFor==='function'?csLocFor('m',no):null,m=L&&L.loc.match(/S\/?N\s*[:.]?\s*([A-Za-z0-9-]+)/i);return m?m[1]:'';}
 function autoHD(no){
+  const sn=normSN(csSerialOf(no));if(sn){const bySN=showroom.machines.find(m=>m.type==='hd'&&normSN(m.serial)===sn);if(bySN)return bySN;}
   const re=new RegExp('(^|[^0-9])(เครื่อง(ที่)?|หมายเลข|no\\.?|#|hd)\\s*0*'+no+'(?![0-9])','i');
   return showroom.machines.find(m=>m.type==='hd'&&(String(m.name||'').trim()===String(no)||re.test(String(m.name||''))||re.test(String(m.code||''))||re.test(String(m.location||''))))||null;
 }
 function linkedHD(no){const map=setting('hdmap',{})||{},id=map[no];if(id===undefined)return autoHD(no);return id?showroom.machines.find(m=>m.id===id)||null:null;}
 function linkedRO(pid){const map=setting('romap',{})||{},id=map[pid];if(id)return showroom.machines.find(m=>m.id===id)||null;
   if(id===undefined){const ros=showroom.machines.filter(m=>m.type==='ro'),p=portoOf(pid);
+    const byName=ros.find(m=>p.re.test([m.name,m.code,m.model,m.serial].join(' ')));if(byName)return byName;
     const big=ros.filter(m=>/ใหญ่|large/i.test(m.name||'')),small=ros.filter(m=>/เล็ก|small/i.test(m.name||''));
     if(p.size==='large')return big[0]||null;return small[pid==='ros1'?0:1]||null;}
   return null;}
@@ -1113,7 +1148,7 @@ function csEquipBlock(kind,key){
   if(cs.state!=='ok')return csNotice();
   const L=csLocFor(kind,key),rs=cs.recs.filter(r=>kind==='m'?r.point==='S7'&&r.machine===String(key):r.porto===key);
   let h='';
-  if(L){const x=csLocInfo(L);h+=`<p class="small">ชื่อจุดในแอป: ${esc(L.loc)}</p><div class="chips">${planChip(csAgg([x.bac]),'เพาะเชื้อ')} ${planChip(csAgg([x.endo]),'Endotoxin')}</div>${csPlanGrid([{L,label:csShort(L,true)}])}`;}
+  if(L)h+=csPlanGrid([{L,label:csShort(L,true)}]);
   else h+='<p class="small">ไม่พบจุดนี้ในแผนรายปีของแอปผล C/S</p>';
   return h+csHist(rs,{where:false,limit:6})+`<div class="actions">${csOpenBtn('บันทึกผลในแอปผล C/S','')}</div>`;
 }
@@ -2127,9 +2162,11 @@ function hdUnit(hm,x,z,ry){
   return {g:root,rear:rotP(x,z,ry,.07,.3,-.3)};
 }
 /* ผลตรวจล่าสุดของเครื่อง: เลือกผลที่ใหม่กว่าระหว่างแอปผล C/S กับระบบเครื่องไตเทียม และระบบน้ำเคลื่อนที่ */
-function newestTest(t,c){const td=t?String(t.date).slice(0,10):'';if(c&&(!t||c.date>=td))return {test:c,ts:resultStatus(c).overall};return {test:t,ts:t?srTestStatus(t).overall:null};}
-function equipHealth(f,x){if(f.state==='over'||x.ts==='fail')return 'bad';if(f.state==='soon'||x.ts==='watch')return 'watch';if(!x.test&&f.state!=='ok')return 'mute';return 'ok';}
-function hdState(no){const hm=hdOf(no),m=linkedHD(no),f=srFilter(m),x=newestTest(m?srTests(m.id)[0]:null,csLatestFor('m',no));return {hm,m,h:m||x.test?equipHealth(f,x):'mute',test:x.test,ts:x.ts,f,run:m?runStatus(m):true};}
+/* ผลตรวจใช้แอปผล C/S เป็นหลัก ถ้าดึงแอปผล C/S ไม่ได้จึงใช้ผลที่บันทึกในระบบเครื่อง */
+function newestTest(t,c){if(cs.state==='ok')return {test:c,ts:c?resultStatus(c).overall:null};return {test:t,ts:t?srTestStatus(t).overall:null};}
+function planOver(kind,key){const L=csLocFor(kind,key);if(!L)return false;const x=csLocInfo(L);return x.bac.state==='over'||x.endo.state==='over';}
+function equipHealth(f,x,over){if(f.state==='over'||x.ts==='fail')return 'bad';if(f.state==='soon'||x.ts==='watch'||over)return 'watch';if(!x.test&&f.state!=='ok')return 'mute';return 'ok';}
+function hdState(no){const hm=hdOf(no),m=linkedHD(no),f=srFilter(m),x=newestTest(m?srTests(m.id)[0]:null,csLatestFor('m',no));return {hm,m,h:m||x.test?equipHealth(f,x,planOver('m',no)):'mute',test:x.test,ts:x.ts,f,run:m?runStatus(m):true};}
 const SCR_RUN={bad:'#dc2626',watch:'#d97706',ok:'#0284c7',mute:'#475569'};
 function drawHDScreen(o,t){
   const g=o.scr.g,w=512,h=384,s=hdState(o.hm.no),b=BADGE[o.hm.badge],F=(wt,px)=>{g.font=`${wt} ${px}px ${FONT}`;};
@@ -2192,7 +2229,7 @@ function roUnit(p,x,z,ry){
   RTAGS.push({id:p.id,pos:new THREE.Vector3(x,1.25*sc+.18,z)});
   return o;
 }
-function roState(pid){const m=linkedRO(pid),x=newestTest(m?srTests(m.id)[0]:null,csLatestFor('p',pid));return {m,h:m||x.test?equipHealth({state:'none'},x):'mute',test:x.test,ts:x.ts,run:m?runStatus(m):true};}
+function roState(pid){const m=linkedRO(pid),x=newestTest(m?srTests(m.id)[0]:null,csLatestFor('p',pid));return {m,h:m||x.test?equipHealth({state:'none'},x,planOver('p',pid)):'mute',test:x.test,ts:x.ts,run:m?runStatus(m):true};}
 function drawROScreen(o,t){
   const g=o.scr.g,w=384,h=240,s=roState(o.p.id),pad=10,hh=36;
   g.fillStyle='#061f28';g.fillRect(0,0,w,h);g.fillStyle=s.m&&!s.run?'#E39A2B':'#19B5A5';g.fillRect(0,0,w,hh);
@@ -2403,7 +2440,7 @@ function renderCaption(){
 function select(kind,id,fromList){
   if(player&&player.type==='tank'&&!(kind==='comp'&&id===player.id))stopPlayer(true);
   selected=kind?{kind,id}:null;
-  if(kind&&fromList)hideEquip();
+  if(kind&&fromList){if(equipOn&&(kind==='machine'||kind==='porto'))equipGo(kind,id);else hideEquip();}
   if(has3D){select3D(kind,id);if(kind&&fromList){focus3D(kind,id);markView(kind==='comp'&&id==='hd'?'hd':'');}}
   renderPanel();markRows();
   if(kind&&fromList&&innerWidth<=1100)$('#panel').scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'start'});
@@ -2429,10 +2466,10 @@ function renderPanel(){
   else if(selected&&selected.kind==='porto')P.innerHTML=panelPorto(selected.id);
   else if(selected&&selected.kind==='gauge')P.innerHTML=panelGauge(selected.id);
   else if(selected&&selected.kind==='point')P.innerHTML=panelPoint(pointOf(selected.id));
-  else P.innerHTML=mode==='chem'||mode==='heat'?panelDisinfect(mode):mode==='sample'?panelSampling():panelOverview();
+  else P.innerHTML=equipOn?panelEquip():mode==='chem'||mode==='heat'?panelDisinfect(mode):mode==='sample'?panelSampling():panelOverview();
   bindPanel(P);
 }
-function backBtn(){return `<button type="button" class="btn small back" data-act="back">← ภาพรวม</button>`;}
+function backBtn(){return `<button type="button" class="btn small back" data-act="back">${equipOn?'← เครื่องทั้งหมด':'← ภาพรวม'}</button>`;}
 function panelOverview(){
   const todo=todoList(),col={0:'#d9483b',1:'#e39a2b',2:'#e39a2b',3:'#8aa0ae'};
   return `<h2>ภาพรวมระบบน้ำ RO</h2>
@@ -2495,10 +2532,13 @@ function panelComp(c){
 const EQUIP_PAGE='https://eyebidi-aom.github.io/3dhemodialysis/';let equipOn=false;
 function showEquip(hash){
   const f=$('#eqFrame'),url=EQUIP_PAGE+(hash||'#/');if(f.getAttribute('src')!==url)f.setAttribute('src',url);
-  $('#equipPane').hidden=false;$('#stage').classList.add('equip-on');equipOn=true;if(has3D)S3D.paused=true;markView('equip');
+  const was=equipOn;$('#equipPane').hidden=false;$('#stage').classList.add('equip-on');document.body.classList.add('equip-mode');equipOn=true;if(has3D)S3D.paused=true;markView('equip');
+  if(!was)renderPanel();
 }
+/* เลือกเครื่องจากแผงข้างขณะอยู่ในแถบนี้: เปิดหน้าของเครื่องนั้นในกรอบด้วย */
+function equipGo(kind,id){const m=kind==='machine'?linkedHD(id):linkedRO(id);showEquip(m?'#/m/'+encodeURIComponent(m.id):'#/');}
 function hideEquip(){
-  if(!equipOn)return;equipOn=false;$('#equipPane').hidden=true;$('#stage').classList.remove('equip-on');if(has3D){S3D.paused=false;S3D.labelSig='';}
+  if(!equipOn)return;equipOn=false;$('#equipPane').hidden=true;$('#stage').classList.remove('equip-on');document.body.classList.remove('equip-mode');if(has3D){S3D.paused=false;S3D.labelSig='';}
   loadShowroom().then(()=>{if(has3D)applyLive3D();renderPanel();});
 }
 /* กดเครื่องในผัง: เปิดหน้าข้อมูลเครื่องนั้น ถ้ายังไม่ได้จับคู่ เปิดรายการเครื่องทั้งหมด */
@@ -2546,40 +2586,85 @@ function machineList(){
   return `<div class="plist">${HD_MACHINES.map(m=>{const b=BADGE[m.badge];return `<button type="button" data-sel="machine:${m.no}"><span class="bdg" style="background:${b.bg}">${esc(b.text)}</span><span><b>เครื่อง ${m.no}</b> ${esc(STATION_NAME[m.station])}</span></button>`;}).join('')}${PORTO.map(p=>`<button type="button" data-sel="porto:${p.id}"><i style="background:#19B5A5"></i><span><b>${esc(p.short)}</b> หน้าห้องระบบน้ำ</span></button>`).join('')}</div>`;
 }
 const HEALTH_TXT={ok:['st-ok','ผลตรวจและฟิลเตอร์อยู่ในเกณฑ์'],watch:['st-watch','เฝ้าระวัง'],bad:['st-bad','ต้องดำเนินการ'],mute:['st-none','ยังไม่มีผลตรวจ']};
-function srBlock(kind,key,m){
+const HEALTH_SHORT={ok:['st-ok','อยู่ในเกณฑ์'],watch:['st-watch','เฝ้าระวัง'],bad:['st-bad','ต้องดำเนินการ'],mute:['st-none','ยังไม่มีผล']};
+function srNotice(){
   if(showroom.state==='error')return `<div class="callout warn">ดึงข้อมูลจากระบบเครื่องไตเทียม และระบบน้ำเคลื่อนที่ไม่สำเร็จ: ${esc(showroom.err)} · <button type="button" class="linkbtn" data-act="reload">ลองอีกครั้ง</button></div>`;
   if(showroom.state==='off')return '<p class="small">ยังไม่ได้ใส่ลิงก์ระบบเครื่องไตเทียม และระบบน้ำเคลื่อนที่ในหน้าตั้งค่า</p>';
   if(showroom.state!=='ok')return '<p class="small">กำลังโหลดข้อมูลเครื่อง…</p>';
+  return '';
+}
+/* ข้อมูลเครื่องจากระบบเครื่องไตเทียม และระบบน้ำเคลื่อนที่ (ชื่อ รุ่น รหัส Serial number สถานะ) */
+function srDetails(kind,key,m){
+  const n=srNotice();if(n)return n;
   const list=showroom.machines.filter(x=>x.type===kind),mode=linkMode(kind,key);
-  let h=`<div class="field"><label for="srLink">เครื่องนี้ในระบบเครื่องไตเทียม และระบบน้ำเคลื่อนที่</label><select id="srLink" data-kind="${kind}" data-key="${esc(key)}"><option value="__auto" ${mode==='auto'?'selected':''}>อัตโนมัติ${mode==='auto'?' · '+(m?esc(m.name):'ไม่พบเครื่องที่ตรง'):''}</option><option value="" ${mode==='none'?'selected':''}>ไม่เชื่อม</option>${list.map(x=>`<option value="${esc(x.id)}" ${mode==='set'&&m&&m.id===x.id?'selected':''}>${esc(x.name||'ไม่มีชื่อ')}${x.code?' · '+esc(x.code):''}</option>`).join('')}</select><span class="help">${kind==='hd'?'อัตโนมัติ = จับคู่จากหมายเลขเครื่องในชื่อ รหัส หรือที่ตั้งของเครื่องในระบบ':'อัตโนมัติ = จับคู่จากคำว่า เล็ก หรือ ใหญ่ ในชื่อเครื่อง'} หรือเลือกเครื่องเอง</span></div>`;
-  if(!m)return h+'<p class="empty">ยังไม่ได้เชื่อมกับข้อมูลเครื่อง เลือกเครื่องจากรายการด้านบน</p>';
+  let h=`<div class="field"><label for="srLink">เครื่องนี้ในระบบเครื่องไตเทียม และระบบน้ำเคลื่อนที่</label><select id="srLink" data-kind="${kind}" data-key="${esc(key)}"><option value="__auto" ${mode==='auto'?'selected':''}>อัตโนมัติ${mode==='auto'?' · '+(m?esc(m.name):'ไม่พบเครื่องที่ตรง'):''}</option><option value="" ${mode==='none'?'selected':''}>ไม่เชื่อม</option>${list.map(x=>`<option value="${esc(x.id)}" ${mode==='set'&&m&&m.id===x.id?'selected':''}>${esc(x.name||'ไม่มีชื่อ')}${x.serial?' · SN '+esc(x.serial):x.code?' · '+esc(x.code):''}</option>`).join('')}</select><span class="help">${kind==='hd'?'อัตโนมัติ = จับคู่จาก Serial number ในแอปผล C/S ก่อน แล้วจึงดูหมายเลขเครื่องในชื่อหรือรหัส':'อัตโนมัติ = จับคู่จากชื่อ UNO 1, UNO 2, RO social หรือคำว่า เล็ก ใหญ่'} หรือเลือกเครื่องเอง</span></div>`;
+  if(!m)return h+'<p class="empty">ยังไม่ได้เชื่อมกับข้อมูลเครื่อง เลือกเครื่องจากรายการด้านบน หรือเพิ่มเครื่องในระบบเครื่องไตเทียม และระบบน้ำเคลื่อนที่</p>';
   if(m.photo)h+=`<img class="srphoto" src="${esc(fileUrl(m.photo,'img'))}" alt="รูป ${esc(m.name)}" loading="lazy">`;
-  const rows=[['ชื่อเครื่อง',m.name],['ยี่ห้อ / รุ่น',[m.brand,m.model].filter(Boolean).join(' ')],['รหัสครุภัณฑ์',m.code],['หมายเลขเครื่อง',m.serial],['ปีที่ซื้อ',m.yearBE?'พ.ศ. '+m.yearBE:''],['สถานะ',m.status||'พร้อมใช้งาน'],['ที่ตั้งในระบบ',m.location],['หมายเหตุ',m.note]].filter(r=>String(r[1]??'').trim());
-  h+=`<dl class="facts">${rows.map(([a,b])=>`<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join('')}`;
-  if(kind==='hd'){const f=srFilter(m),ft=f.state==='none'?'ไม่มี':f.state==='nodata'?'มี · ยังไม่บันทึกการเปลี่ยน':f.state==='nodue'?'เปลี่ยนล่าสุด '+thDate(f.last.date):'เปลี่ยนล่าสุด '+thDate(f.last.date)+' · '+(f.state==='over'?'เลยกำหนด '+(-f.days)+' วัน':'ครบ '+thDate(f.due)+' (อีก '+f.days+' วัน)');
-    h+=`<dt>Bacteria filter</dt><dd>${esc(ft)} ${f.state==='over'?chip('st-bad','เลยกำหนด'):f.state==='soon'?chip('st-watch','ใกล้ครบ'):''}</dd>`;}
-  h+='</dl><h3>ผลตรวจที่บันทึกในระบบเครื่องไตเทียม และระบบน้ำเคลื่อนที่</h3>';
-  const ts=srTests(m.id);if(!ts.length)return h+'<p class="empty">ยังไม่มีผลตรวจของเครื่องนี้</p>';
-  const byY={};ts.forEach(t=>{const y=beYear(t.date)||'ไม่ระบุปี';(byY[y]=byY[y]||[]).push(t);});
-  Object.keys(byY).sort((a,b)=>b-a).forEach(y=>{h+=`<div class="yearhead">พ.ศ. ${y}</div><ul class="hist">${byY[y].map(t=>{const st=srTestStatus(t);return `<li><div class="row1"><b>${thDate(t.date)} · ${esc(srPointName(t.point))}</b><span class="small">${esc(t.lab||'')}</span></div>
-    <div class="vals">${hasVal(t.cfu)?`<span>เพาะเชื้อ <b>${esc(t.cfu)}</b> CFU/mL</span>${resChip(st.cfu)}`:''}${hasVal(t.eu)?`<span>Endotoxin <b>${esc(t.eu)}</b> EU/mL</span>${resChip(st.eu)}`:''}</div>${t.organism?`<div class="small">เชื้อที่พบ: ${esc(t.organism)}</div>`:''}${t.file?`<div class="ops"><a href="${esc(fileUrl(t.file))}" target="_blank" rel="noopener">เปิดไฟล์ผล</a></div>`:''}</li>`;}).join('')}</ul>`;});
-  return h;
+  const rows=[['ชื่อเครื่อง',m.name],['ยี่ห้อ / รุ่น',[m.brand,m.model].filter(Boolean).join(' ')],['รหัสครุภัณฑ์',m.code],['Serial number',m.serial],['ปีที่ซื้อ',m.yearBE?'พ.ศ. '+m.yearBE:''],['สถานะ',m.status||'พร้อมใช้งาน'],['ที่ตั้งในระบบ',m.location],['หมายเหตุ',m.note]].filter(r=>String(r[1]??'').trim());
+  return h+`<dl class="facts">${rows.map(([a,b])=>`<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join('')}</dl>`;
+}
+/* รอบเก็บตัวอย่างครั้งถัดไปตามแผนในแอปผล C/S */
+function planNext(x){
+  if(!x||x.state==='noplan')return {t:'ไม่มีในแผน',c:'st-none'};
+  if(x.state==='over')return {t:'ค้างผล '+x.missed.map(m=>FY_M[m]).join(' '),c:'st-bad'};
+  if(x.nowPlan&&!x.nowDone)return {t:'เดือนนี้ ('+fyMonth(x.fy,x.cm)+')',c:'st-watch'};
+  return x.next>=0?{t:fyMonth(x.nextFy,x.next),c:'st-ok'}:{t:'—',c:'st-none'};
+}
+/* ผลเพาะเชื้อและ Endotoxin ล่าสุด พร้อมรอบเก็บถัดไปและลิงก์ไฟล์ผล */
+function eqResults(kind,key){
+  if(cs.state!=='ok')return csNotice();
+  const L=csLocFor(kind,key);if(!L)return '<p class="small">ไม่พบเครื่องนี้ในแผนรายปีของแอปผล C/S</p>';
+  const x=csLocInfo(L),box=(lbl,r,v,unit,st,file,pl)=>{const n=planNext(pl);
+    return `<div class="rbox"><span class="rb-h">${lbl}</span>${r?`<span class="rb-v"><b>${esc(v)}</b> ${unit}</span><span>${resChip(st)}</span><span class="rb-d">ตรวจ ${thDate(r.date)}</span>`:'<span class="rb-v rb-none">ยังไม่มีผล</span>'}
+    <span class="rb-n">รอบเก็บถัดไป</span><span>${chip(n.c,n.t)}</span>${file?`<a class="rb-f" href="${esc(file)}" target="_blank" rel="noopener">เปิดไฟล์ผลล่าสุด</a>`:r?'<span class="rb-d">ไม่มีไฟล์ผลแนบ</span>':''}</div>`;};
+  return `<div class="rboxes">${box('เพาะเชื้อ (C/S)',x.lastCfu,x.lastCfu&&x.lastCfu.cfu,'CFU/mL',x.cfuSt,x.lastCfu&&x.lastCfu.file,x.bac)}${box('Endotoxin',x.lastEu,x.lastEu&&x.lastEu.eu,'EU/mL',x.euSt,x.lastEu&&x.lastEu.fileEu,x.endo)}</div><p class="small">ชื่อในแอปผล C/S: ${esc(L.loc)}</p>`;
+}
+function filterLine(m,f){if(!m)return 'ยังไม่เชื่อมข้อมูลเครื่อง';if(!f||f.state==='none')return 'ไม่มี';if(f.state==='nodata')return 'ยังไม่บันทึกการเปลี่ยน';
+  if(f.state==='nodue')return 'เปลี่ยน '+thDate(String(f.last.date).slice(0,10));return 'เปลี่ยน '+thDate(String(f.last.date).slice(0,10))+' · '+(f.state==='over'?'เลยกำหนด '+(-f.days)+' วัน':'ครบ '+thDate(String(f.due).slice(0,10)));}
+/* Bacteria filter หลังเครื่อง: ครบกำหนดครั้งถัดไป และประวัติการเปลี่ยนทั้งหมด */
+function filterBlock(m){
+  const n=srNotice();if(n)return n;
+  if(!m)return '<p class="empty">ยังไม่ได้เชื่อมกับข้อมูลเครื่อง เลือกเครื่องในส่วนข้อมูลเครื่องด้านล่าง</p>';
+  if(!m.hasFilter)return '<p class="small">ข้อมูลในระบบเครื่องระบุว่าเครื่องนี้ไม่มี Bacteria filter</p>';
+  const f=srFilter(m),list=showroom.filters.filter(x=>x.machineId===m.id).sort((a,b)=>String(b.date).localeCompare(String(a.date))),d=v=>thDate(String(v).slice(0,10));
+  let h=`<dl class="facts"><dt>เปลี่ยนล่าสุด</dt><dd>${f.last?d(f.last.date):'ยังไม่บันทึก'}</dd><dt>ครบกำหนดเปลี่ยน</dt><dd>${f.due?d(f.due)+' '+(f.state==='over'?chip('st-bad','เลยกำหนด '+(-f.days)+' วัน'):chip(f.state==='soon'?'st-watch':'st-ok','อีก '+f.days+' วัน')):'—'}</dd>${Number(m.filterDays)>0?`<dt>รอบเปลี่ยน</dt><dd>ทุก ${esc(m.filterDays)} วัน</dd>`:''}</dl>`;
+  return h+(list.length?`<ul class="hist">${list.map(x=>`<li><div class="row1"><b>${d(x.date)}</b>${x.by?`<span class="small">${esc(x.by)}</span>`:''}</div>${x.lot?`<div class="small">Lot ${esc(x.lot)}</div>`:''}${x.due?`<div class="small">ครบกำหนด ${d(x.due)}</div>`:''}${x.note?`<div class="small">${esc(x.note)}</div>`:''}${x.sticker?`<div class="ops"><a href="${esc(fileUrl(x.sticker))}" target="_blank" rel="noopener">ดูสติกเกอร์</a></div>`:''}</li>`).join('')}</ul>`:'<p class="empty">ยังไม่มีประวัติการเปลี่ยน Bacteria filter</p>');
+}
+/* การ์ดสรุปเครื่องในแถบเครื่องไตเทียม และระบบน้ำเคลื่อนที่ */
+function eqCard(kind,key){
+  const hd=kind==='machine',hm=hd?hdOf(key):null,p=hd?null:portoOf(key),s=hd?hdState(key):roState(key),L=cs.state==='ok'?csLocFor(hd?'m':'p',key):null,x=L?csLocInfo(L):null,hs=HEALTH_SHORT[s.h];
+  const head=hd?`<span class="bdg" style="background:${BADGE[hm.badge].bg}">${esc(BADGE[hm.badge].text)}</span><b>เครื่อง ${hm.no}</b><span class="small">${esc(STATION_NAME[hm.station])}</span>`:`<i class="eqdot"></i><b>${esc(p.short)}</b><span class="small">${p.size==='large'?'เครื่องใหญ่':'เครื่องเล็ก'}</span>`;
+  const row=(lbl,r,v,st,pl)=>{const n=planNext(pl);return `<span class="eq-l">${lbl}</span><span class="eq-v"><span class="eq-1">${r?`<b>${esc(v)}</b>${resChip(st)}`:'<span class="eq-none">ยังไม่มีผล</span>'}</span><span class="eq-2">${r?'ตรวจ '+thDate(r.date)+' · ':''}รอบถัดไป <b class="nx ${n.c.replace('st-','nx-')}">${esc(n.t)}</b></span></span>`;};
+  let rows=x?row('C/S',x.lastCfu,x.lastCfu&&x.lastCfu.cfu,x.cfuSt,x.bac)+row('Endotoxin',x.lastEu,x.lastEu&&x.lastEu.eu,x.euSt,x.endo):`<span class="eq-l"></span><span class="eq-v"><span class="eq-2">${cs.state==='ok'?'ไม่พบในแผนของแอปผล C/S':'รอข้อมูลจากแอปผล C/S'}</span></span>`;
+  if(hd)rows+=`<span class="eq-l">Filter</span><span class="eq-v"><span class="eq-2 ${s.f&&s.f.state==='over'?'nx-bad':s.f&&s.f.state==='soon'?'nx-watch':''}">${esc(filterLine(s.m,s.f))}</span></span>`;
+  const links=x?[x.lastCfu&&x.lastCfu.file?`<a href="${esc(x.lastCfu.file)}" target="_blank" rel="noopener">ผล C/S ล่าสุด</a>`:'',x.lastEu&&x.lastEu.fileEu?`<a href="${esc(x.lastEu.fileEu)}" target="_blank" rel="noopener">ผล Endotoxin ล่าสุด</a>`:''].join(''):'';
+  return `<div class="eqc"><button type="button" class="eqc-b" data-sel="${kind}:${key}"><span class="eqc-h">${head}${s.m||s.test?chip(hs[0],hs[1]):''}</span><span class="eqc-g">${rows}</span></button>${links?`<div class="ops">${links}</div>`:''}</div>`;
+}
+function panelEquip(){
+  return `<h2>เครื่องไตเทียม และระบบน้ำเคลื่อนที่</h2>
+  <p class="small">ผลเพาะเชื้อและ Endotoxin จากแอปผล C/S · Bacteria filter จากระบบเครื่องไตเทียม และระบบน้ำเคลื่อนที่ · กดที่เครื่องเพื่อดูรายละเอียดและประวัติ</p>${csNotice()}
+  <h3>เครื่องไตเทียม</h3><div class="eqlist">${HD_MACHINES.map(m=>eqCard('machine',m.no)).join('')}</div>
+  <h3>ระบบน้ำ RO เคลื่อนที่</h3><div class="eqlist">${PORTO.map(p=>eqCard('porto',p.id)).join('')}</div>
+  ${cs.state==='ok'?`<div class="actions">${csOpenBtn('บันทึกผลในแอปผล C/S','')}</div>`:''}`;
 }
 function panelMachine(no){
   const hm=hdOf(no);if(!hm)return panelOverview();const b=BADGE[hm.badge],s=hdState(no),ht=HEALTH_TXT[s.h];
-  let h=`${backBtn()}<div class="kicker"><span class="bdg big" style="background:${b.bg}">${esc(b.text)}</span>${chip('','จุดจ่ายน้ำ '+hm.station+' · '+STATION_NAME[hm.station])}${s.m||s.test?chip(ht[0],ht[1]):''}</div>
-  <h2>เครื่องไตเทียม หมายเลข ${hm.no}</h2><p><b>สัญลักษณ์ ${esc(b.text)}</b> ${esc(b.desc)}</p>`;
-  h+=`<div class="actions"><button type="button" class="btn primary" data-act="showroom" data-k="machine" data-id="${hm.no}">ดูและบันทึกข้อมูลเครื่อง</button></div>`;
-  h+=`<h3>ผลเพาะเชื้อและ Endotoxin ของน้ำยาไตเทียม</h3>${csEquipBlock('m',hm.no)}
-  <div class="actions"><button type="button" class="btn" data-sel="point:S7">ไปที่จุด S7</button><button type="button" class="btn" data-sel="comp:hd">จุดจ่ายน้ำทั้งหมด</button></div>
-  <h3>ข้อมูลเครื่อง</h3>${srBlock('hd',String(hm.no),s.m)}
+  return `${backBtn()}<div class="kicker"><span class="bdg big" style="background:${b.bg}">${esc(b.text)}</span>${chip('','จุดจ่ายน้ำ '+hm.station+' · '+STATION_NAME[hm.station])}${s.m||s.test?chip(ht[0],ht[1]):''}</div>
+  <h2>เครื่องไตเทียม หมายเลข ${hm.no}</h2><p><b>สัญลักษณ์ ${esc(b.text)}</b> ${esc(b.desc)}</p>
+  <div class="actions"><button type="button" class="btn primary" data-act="showroom" data-k="machine" data-id="${hm.no}">ดูและบันทึกข้อมูลเครื่อง</button></div>
+  <h3>ผลเพาะเชื้อและ Endotoxin ล่าสุด</h3>${eqResults('m',hm.no)}
+  <h3>Bacteria filter หลังเครื่อง</h3>${filterBlock(s.m)}
+  <h3>แผนตรวจและประวัติผล</h3>${csEquipBlock('m',hm.no)}
+  <h3>ข้อมูลเครื่อง</h3>${srDetails('hd',String(hm.no),s.m)}
   <p class="small src">แนวทางเวชปฏิบัติการฟอกเลือดด้วยเครื่องไตเทียม พ.ศ. 2565 ของสมาคมโรคไตแห่งประเทศไทย ให้ใช้เครื่องเฉพาะสำหรับผู้ป่วย HBV และอบฆ่าเชื้อเครื่องทันทีหลังใช้กับผู้ป่วย HBV และ HCV ทุกครั้ง แนวทางไม่ได้กำหนดสีสัญลักษณ์ สีวงกลมในผังนี้เป็นสีที่หน่วยกำหนด</p>`;
-  return h;
 }
 function panelPorto(id){
   const p=portoOf(id);if(!p)return panelOverview();const s=roState(id),ht=HEALTH_TXT[s.h];
-  let h=`${backBtn()}<div class="kicker">${chip('',p.size==='large'?'เครื่องใหญ่':'เครื่องเล็ก')}${s.m||s.test?chip(ht[0],ht[1]):''}</div><h2>${esc(p.name)}</h2><p>จอดเรียงชิดผนังห้องเทสารคัดหลั่ง ฝั่งโถงหน้าห้องระบบน้ำ เป็นเครื่องผลิตน้ำ RO แบบเข็นไปใช้ข้างเตียงผู้ป่วยนอกห้องไตเทียม</p>`;
-  return h+`<div class="actions"><button type="button" class="btn primary" data-act="showroom" data-k="porto" data-id="${id}">ดูและบันทึกข้อมูลเครื่อง</button></div><h3>ผลเพาะเชื้อและ Endotoxin ของน้ำ RO</h3>${csEquipBlock('p',id)}<h3>ข้อมูลเครื่อง</h3>`+srBlock('ro',id,s.m);
+  return `${backBtn()}<div class="kicker">${chip('',p.size==='large'?'เครื่องใหญ่':'เครื่องเล็ก')}${s.m||s.test?chip(ht[0],ht[1]):''}</div><h2>${esc(p.name)}</h2><p>จอดเรียงชิดผนังห้องเทสารคัดหลั่ง ฝั่งโถงหน้าห้องระบบน้ำ เป็นเครื่องผลิตน้ำ RO แบบเข็นไปใช้ข้างเตียงผู้ป่วยนอกห้องไตเทียม</p>
+  <div class="actions"><button type="button" class="btn primary" data-act="showroom" data-k="porto" data-id="${id}">ดูและบันทึกข้อมูลเครื่อง</button></div>
+  <h3>ผลเพาะเชื้อและ Endotoxin ล่าสุด</h3>${eqResults('p',id)}
+  <h3>แผนตรวจและประวัติผล</h3>${csEquipBlock('p',id)}
+  <h3>ข้อมูลเครื่อง</h3>${srDetails('ro',id,s.m)}`;
 }
 function thText(p){const t=thresholds()[p.cat];if(!t)return '';return `เพาะเชื้อ ต่ำกว่า ${t.cfuMax} CFU/mL (เฝ้าระวังตั้งแต่ ${t.cfuAction}) · Endotoxin ต่ำกว่า ${t.euMax} EU/mL (เฝ้าระวังตั้งแต่ ${t.euAction})`;}
 function panelPoint(p){

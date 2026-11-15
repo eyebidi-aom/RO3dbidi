@@ -265,6 +265,36 @@ dialog#roDlg{max-width:min(1180px,96vw)}
 .stage.equip-on .labels,.stage.equip-on .hint,.stage.equip-on canvas{visibility:hidden}
 .stage-wrap:has(.stage.equip-on) .legend,.stage-wrap:has(.stage.equip-on) .cap{display:none}
 @media (max-width:640px){.equip-pane{top:48px}.stage.equip-on{height:calc(100vh - 60px)}}
+/* ผลและแผนตรวจจากแอปผล C/S */
+a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--ink)}
+a.btn.primary{color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px}
+.pgrid-wrap{overflow-x:auto;margin:8px 0 2px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.pgrid{border-collapse:collapse;width:100%;table-layout:fixed;font-size:12px}
+.pgrid thead th:first-child{width:66px}
+.pgrid th,.pgrid td{padding:4px 1px;text-align:center;border-bottom:1px solid #edf2f5}
+.pgrid thead th{font-size:9.5px;font-weight:600;color:var(--muted);white-space:nowrap;letter-spacing:-.2px;padding:5px 0}
+.pgrid tbody th{text-align:left;font-weight:600;font-size:11.5px;color:var(--ink);padding:4px 2px 4px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pgrid tbody tr:last-child th,.pgrid tbody tr:last-child td{border-bottom:0}
+.pgrid .now{background:#eaf5fa}
+.pgrid thead th.now{color:var(--ink);box-shadow:inset 0 -2px 0 var(--ro-ink)}
+.pm{display:block;width:min(13px,80%);height:7px;margin:1.5px auto;border-radius:2px;box-sizing:border-box}
+.pm.plan{border:1.5px solid #98adbb}
+.pm.due{border:1.5px solid var(--watch);background:var(--watch-bg)}
+.pm.miss{border:1.5px solid var(--bad);background:var(--bad-bg)}
+.pm.done{background:var(--ok)}
+.pm.done.watch{background:var(--watch)}
+.pm.done.fail{background:var(--bad)}
+.pleg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted);margin:6px 0 12px}
+.pleg span{display:inline-flex;align-items:center;gap:5px}
+.pleg .pm{display:inline-block;margin:0;width:13px}
+.mplan{list-style:none;margin:6px 0 10px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px}
+.mplan li>*{display:flex;flex-direction:column;align-items:flex-start;gap:0;width:100%;box-sizing:border-box;text-align:left;font:inherit;font-size:13.5px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;color:var(--ink)}
+.mplan li>* span{color:var(--muted);font-size:12px}
+.mplan button{cursor:pointer}
+.mplan button:hover{border-color:var(--ro)}
+.mplan li.ok>*{background:#eef8f3;border-color:#c3e5d3}
+.mplan li.ok>* span{color:#16774f}
 
 </style>
 </head>
@@ -322,7 +352,7 @@ dialog#roDlg{max-width:min(1180px,96vw)}
   <section class="tables">
     <div class="card">
       <div class="card-head"><h2>ผลตรวจน้ำล่าสุดรายจุด</h2><p class="small" id="samplingRule"></p></div>
-      <div class="tablewrap"><table class="tbl" id="tblPoints"><thead><tr><th>จุด</th><th>ชนิดน้ำ</th><th>เพาะเชื้อล่าสุด (CFU/mL)</th><th>Endotoxin ล่าสุด (EU/mL)</th><th>รอบตรวจถัดไป</th></tr></thead><tbody></tbody></table></div>
+      <div class="tablewrap"><table class="tbl" id="tblPoints"><thead><tr><th>จุด</th><th>ชนิดน้ำ</th><th>เพาะเชื้อล่าสุด (CFU/mL)</th><th>Endotoxin ล่าสุด (EU/mL)</th><th>ตามแผนตรวจ</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card">
       <div class="card-head"><h2>ไส้กรองและอุปกรณ์ที่เปลี่ยนตามรอบ</h2><p class="small">รอบเปลี่ยนตั้งต้นตามแผ่นภาพของหน่วย แก้ได้ในหน้าตั้งค่า</p></div>
@@ -407,13 +437,15 @@ const CAT={feed:{label:'น้ำก่อนเข้า RO',cls:'cat-feed'},wa
 /* จุดจ่ายน้ำ 7 = ICU ห้อง 5, จุดจ่ายน้ำ 8 = ICU ห้อง 4 (ตามพิมพ์เขียว) · เครื่องไตเทียมหมายเลข 4–8 ตั้งที่จุด 1–5 (ดู HD_MACHINES ใน live.js) */
 function machineLabel(n){n=String(n||'');const m=n&&hdOf(n);return m?'เครื่อง '+n+' ('+STATION_NAME[m.station]+')':n?'เครื่อง '+n:'';}
 const SINKS=['ปกติ 1','ปกติ 2','Hep C','Hep B'];
-function resultWhere(r){return [r.machine?machineLabel(r.machine):'',r.sink?'อ่าง '+r.sink:''].filter(Boolean).join(' · ');}
+/* ชื่อก๊อกอ่างล้างตัวกรองแบบในแอปผล C/S เช่น ปกติ 2/1, Hep C 1/2 */
+function sinkTap(sink,tap){return tap?(/^ปกติ/.test(sink)?'ปกติ '+tap:sink+' '+tap):sink;}
+function resultWhere(r){return [r.machine?machineLabel(r.machine):'',r.sink?'อ่าง '+sinkTap(r.sink,r.tap):'',r.station?'จุด '+r.station+(STATION_NAME[r.station]?' '+STATION_NAME[r.station]:''):''].filter(Boolean).join(' · ');}
 
 /* จุดเก็บตัวอย่างน้ำ (ระบบตามพิมพ์เขียวไม่มีถังเก็บน้ำ RO จึงไม่มีจุด S3) */
 const POINTS=[
   {id:'S1',cat:'feed',name:'ก่อนเข้าเครื่อง RO',where:'Sample port หลังไส้กรอง 5 micron (ผ่าน PT และ QE1) ก่อนเข้าเครื่อง RO ในห้องระบบน้ำ R.O.',note:'ใช้ดูคุณภาพน้ำหลังชุดกรองเบื้องต้น เป็นข้อมูลเปรียบเทียบ ไม่ใช่ Dialysis water จึงไม่ตัดสินผ่านเกณฑ์และไม่เตือนรอบตรวจ',comp:'f5'},
   {id:'S2',cat:'water',name:'น้ำ RO ออกจากเครื่อง (Permeate)',where:'Sample port ท่อน้ำ RO ที่ออกจากเครื่อง RO หลังตัววัดค่าการนำไฟฟ้า QE2 ก่อนเข้าท่อวน',comp:'membrane'},
-  {id:'S4',cat:'water',name:'จุดจ่ายน้ำจุดแรก (เตียง 1)',where:'จุดจ่ายน้ำเครื่องไตเทียมเตียง 1 ในห้องไตเทียม เป็นจุดแรกของท่อวนหลังออกจากเครื่อง RO (จุดผสมน้ำยาไตเทียม)',comp:'hd'},
+  {id:'S4',cat:'water',name:'ทางจ่ายน้ำ 6, 7, 8',where:'ก๊อกน้ำ RO ที่จุดจ่ายน้ำซึ่งไม่มีเครื่องไตเทียมตั้งประจำ เก็บน้ำจากก๊อกโดยตรง: จุด 6 (เก้าอี้ 6) · จุด 7 (ICU ห้อง 5) · จุด 8 (ICU ห้อง 4) ส่วนจุด 1–5 ตรวจผ่านน้ำยาไตเทียมของเครื่องที่ตั้งอยู่ (S7)',comp:'hd',taps:[6,7,8]},
   {id:'S5',cat:'water',name:'อ่างล้างตัวกรอง',where:'ก๊อกน้ำ RO ที่อ่างล้างตัวกรอง ทางเดินด้านนอกหน้าห้องเทสารคัดหลั่ง มี 4 อ่าง ระบุอ่างที่เก็บเมื่อบันทึกผล',comp:'sinks',sink:true},
   {id:'S6',cat:'water',name:'ท่อขากลับก่อนเข้า Break tank',where:'Sampling Valve Post Loop ที่ท่อขากลับ ก่อนน้ำเข้า Break tank เป็นจุดสุดท้ายของท่อวน',comp:'breaktank'},
   {id:'S7',cat:'dialysate',name:'น้ำยาไตเทียมจากเครื่อง',where:'น้ำยาไตเทียม (Dialysis fluid) จากเครื่องไตเทียม ระบุหมายเลขเครื่องที่เก็บ (ปัจจุบันมีเครื่อง 4–8 ตั้งที่จุดจ่ายน้ำ 1–5)',comp:'hd',machine:true}
@@ -562,14 +594,15 @@ function judge(text,action,max){
 const RANK={pass:0,watch:1,fail:2};
 const pointOf=id=>POINTS.find(p=>p.id===id)||POINTS[0];
 function resultStatus(r){
-  const p=pointOf(r.point);if(p.cat==='feed')return {cfu:null,eu:null,overall:null};
-  const th=thresholds()[p.cat],cfu=judge(r.cfu,th.cfuAction,th.cfuMax),eu=judge(r.eu,th.euAction,th.euMax);
+  const cat=r.porto?'water':pointOf(r.point).cat;if(cat==='feed')return {cfu:null,eu:null,overall:null};
+  const th=thresholds()[cat],cfu=judge(r.cfu,th.cfuAction,th.cfuMax),eu=judge(r.eu,th.euAction,th.euMax);
   const all=[cfu,eu].filter(Boolean);return {cfu,eu,overall:all.length?all.reduce((a,b)=>RANK[b]>RANK[a]?b:a):null};
 }
 const RES_LABEL={pass:'ผ่านเกณฑ์',watch:'ถึงระดับเฝ้าระวัง',fail:'เกินเกณฑ์'},RES_CLS={pass:'st-ok',watch:'st-watch',fail:'st-bad'};
 function resultsOf(pid){return db.results.filter(r=>r.point===pid).sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.createdAt).localeCompare(String(a.createdAt)));}
 const hasVal=v=>String(v??'').trim()!=='';
 function pointInfo(p){
+  if(typeof cs!=='undefined'&&cs.state==='ok')return csPointInfo(p);
   const rs=resultsOf(p.id),lastCfu=rs.find(r=>hasVal(r.cfu)),lastEu=rs.find(r=>hasVal(r.eu)),S=sampling();
   const due=(last,months)=>{if(p.cat==='feed')return null;if(!last)return {state:'nodata'};const d=addMonths(last.date,months),days=dayDiff(todayISO(),d);return {state:days<0?'over':days<=7?'soon':'ok',due:d,days};};
   const cfuDue=due(lastCfu,S.cfuMonths),euDue=due(lastEu,S.euMonths);
@@ -590,12 +623,14 @@ function todoList(){
     else if(i.state==='soon')out.push({kind:'comp',id:c.id,rank:2,title:c.name,text:(c.change||'เปลี่ยน')+' · ครบ '+thDate(i.due)+' ('+daysText(i.days)+')'});
     else if(i.state==='nodata'&&c.months>0)out.push({kind:'comp',id:c.id,rank:3,title:c.name,text:'ยังไม่บันทึกวันเปลี่ยนครั้งล่าสุด'});});
   POINTS.forEach(p=>{const i=pointInfo(p);
-    if(i.worst==='fail')out.push({kind:'point',id:p.id,rank:0,title:p.id+' '+p.name,text:'ผลตรวจล่าสุดเกินเกณฑ์ ('+thDate((i.cfuSt==='fail'?i.lastCfu:i.lastEu).date)+')'});
+    if(i.worst==='fail'){const r=i.worstRec||(i.cfuSt==='fail'?i.lastCfu:i.lastEu);out.push({kind:'point',id:p.id,rank:0,title:p.id+' '+p.name,text:'ผลตรวจล่าสุดเกินเกณฑ์ ('+thDate(r.date)+(resultWhere(r)?' · '+resultWhere(r):'')+')'});}
     else if(i.worst==='watch')out.push({kind:'point',id:p.id,rank:1,title:p.id+' '+p.name,text:'ผลตรวจล่าสุดถึงระดับเฝ้าระวัง'});
     [['เพาะเชื้อ',i.cfuDue],['Endotoxin',i.euDue]].forEach(([nm,d])=>{if(!d)return;
+      if(d.plan){if(d.state==='over')out.push({kind:'point',id:p.id,rank:1,title:p.id+' '+p.name,text:nm+' '+d.text});else if(d.state==='soon')out.push({kind:'point',id:p.id,rank:2,title:p.id+' '+p.name,text:nm+' '+d.text});return;}
       if(d.state==='over')out.push({kind:'point',id:p.id,rank:1,title:p.id+' '+p.name,text:'ถึงรอบตรวจ'+nm+' · '+daysText(d.days)});
       else if(d.state==='soon')out.push({kind:'point',id:p.id,rank:2,title:p.id+' '+p.name,text:'รอบตรวจ'+nm+' ครบ '+thDate(d.due)});
       else if(d.state==='nodata')out.push({kind:'point',id:p.id,rank:3,title:p.id+' '+p.name,text:'ยังไม่มีผล'+nm});});});
+  if(typeof csTodo==='function')out.push(...csTodo());
   return out.sort((a,b)=>a.rank-b.rank);
 }
 
@@ -621,7 +656,7 @@ const forServer=f=>f?{name:f.name,mime:f.mime,data:f.data}:null;
 /* ---------- ติดต่อ Apps Script ---------- */
 function normalize(d){
   const arr=v=>Array.isArray(v)?v:[];
-  return {components:arr(d.components),changes:arr(d.changes).filter(x=>x&&x.id),results:arr(d.results).filter(x=>x&&x.id&&POINTS.some(p=>p.id===x.point)),settings:arr(d.settings)};
+  return {components:arr(d.components),changes:arr(d.changes).filter(x=>x&&x.id),results:(typeof cs!=='undefined'&&cs.state==='ok'?cs.results:isDemo()?arr(d.results):[]).filter(x=>x&&x.id&&POINTS.some(p=>p.id===x.point)),settings:arr(d.settings)};
 }
 async function parseRes(r){const t=await r.text();let j;try{j=JSON.parse(t);}catch{throw new Error('Apps Script ตอบกลับไม่ใช่ข้อมูล JSON ตรวจว่า Deploy เป็น Web App และให้ทุกคนเข้าถึงได้ ('+t.slice(0,80)+')');}if(j&&j.error)throw new Error(j.error);return j;}
 async function apiLoad(){
@@ -877,6 +912,239 @@ function linkedRO(pid){const map=setting('romap',{})||{},id=map[pid];if(id)retur
     if(p.size==='large')return big[0]||null;return small[pid==='ros1'?0:1]||null;}
   return null;}
 function linkMode(kind,key){const map=setting(kind==='hd'?'hdmap':'romap',{})||{};return map[key]===undefined?'auto':map[key]?'set':'none';}
+
+/* =====================================================================
+   ผลเพาะเชื้อ (C/S) Endotoxin แผนตรวจรายปี และบันทึก PM จากแอปผล C/S ของหน่วย
+   ชีต Plan / ผล / PM · ผังนี้อ่านอย่างเดียว บันทึกผลใหม่ที่แอปผล C/S
+   แผนเรียงตามปีงบประมาณ (ต.ค.–ก.ย.) ช่องคู่ = เพาะเชื้อ ช่องคี่ = Endotoxin เครื่องหมาย ◉ = มีแผน
+   ===================================================================== */
+const CS_URL_DEFAULT='https://script.google.com/macros/s/AKfycbz2E-kTI-sQw8nH3pMBdZOmA83sioeBlzioL9mdGUy7tDGIGIOrfpHxMykDFd9uKZbSLg/exec';
+function csUrl(){return String(setting('csUrl','')||CS_URL_DEFAULT).trim();}
+let cs={state:'idle',locs:[],recs:[],results:[],events:[],pms:[],unmapped:[],err:'',cache:{}};
+
+const FY_M=['ต.ค.','พ.ย.','ธ.ค.','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.'];
+const TH_MA=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const TH_MF=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const fyIdxOf=iso=>{const m=+String(iso).slice(5,7);return m>=10?m-10:m+2;};
+const fyOf=iso=>{const y=+String(iso).slice(0,4),m=+String(iso).slice(5,7);return y+543+(m>=10?1:0);};
+const curFY=()=>fyOf(todayISO()),curFyIdx=()=>fyIdxOf(todayISO());
+const fyMonth=(fy,i)=>FY_M[i]+' '+(i<3?fy-1:fy);
+
+/* วันที่ในชีตผล: "15 ต.ค. 2568" (แบบที่แอปบันทึก) หรือ dd/mm/yyyy หรือ yyyy-mm-dd */
+function csDate(raw){
+  const s=String(raw??'').trim();if(!s)return '';
+  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m){let y=+m[1];if(y>2400)y-=543;return y+'-'+m[2]+'-'+m[3];}
+  m=s.match(/^(\d{1,2})\s*([ก-๙.]+)\s*(\d{2,4})/);
+  if(m){const k=m[2].replace(/\./g,'');let mi=TH_MA.findIndex(a=>a.replace(/\./g,'')===k);if(mi<0)mi=TH_MF.indexOf(m[2]);
+    if(mi>=0){let y=+m[3];if(y<100)y+=2500;if(y>2400)y-=543;return y+'-'+pad(mi+1)+'-'+pad(+m[1]);}}
+  const d=parseStamp(s);return d?isoDate(d):'';
+}
+/* ชื่อจุดแบบเดียวกับที่แอปผล C/S ใช้จับคู่ผลกับแผน */
+function csKey(str){let c=String(str||'').toLowerCase();if(c.includes(':'))c=c.split(':')[0];return c.replace(/ที่/g,'').replace(/[^a-z0-9ก-๙]/g,'');}
+
+/* จับคู่ชื่อจุดในแอปผล C/S กับตำแหน่งในผัง
+   ทางจ่ายน้ำจับคู่จากหมายเลข (ผังใช้ตามพิมพ์เขียว: จุด 7 = ICU ห้อง 5, จุด 8 = ICU ห้อง 4)
+   UNO 1, UNO 2 = RO เคลื่อนที่เครื่องเล็ก 1, 2 · RO social = RO เคลื่อนที่เครื่องใหญ่ */
+function csMapLoc(loc){
+  const s=String(loc||'');
+  if(/aami/i.test(s))return {kind:'aami',point:'S2'};
+  if(/อบระบบ/.test(s))return {kind:'dis'};
+  if(/ล้างตัวกรอง/.test(s)){const sink=/hep\s*c/i.test(s)?'Hep C':/hep\s*b/i.test(s)?'Hep B':/ปกติ\s*2/.test(s)?'ปกติ 2':'ปกติ 1',tp=s.match(/(\d+)\s*\/\s*(\d+)/);
+    return {kind:'test',point:'S5',sink,tap:tp?tp[1]+'/'+tp[2]:''};}
+  if(/dialysate/i.test(s)){const n=s.match(/no\.?\s*(\d+)/i);return n?{kind:'test',point:'S7',machine:String(+n[1])}:null;}
+  if(/ทางจ่ายน้ำ|จุดจ่ายน้ำ/.test(s)){const n=s.match(/(?:ทางจ่ายน้ำ|จุดจ่ายน้ำ)\s*(?:ที่)?\s*(\d+)/);return n?{kind:'test',point:'S4',station:String(+n[1])}:null;}
+  if(/pre\s*loop|\(\s*s2\s*\)/i.test(s))return {kind:'test',point:'S2'};
+  if(/return|\bs6\b|จุดสุดท้าย/i.test(s))return {kind:'test',point:'S6'};
+  if(/uno\s*1/i.test(s))return {kind:'test',porto:'ros1'};
+  if(/uno\s*2/i.test(s))return {kind:'test',porto:'ros2'};
+  if(/social/i.test(s))return {kind:'test',porto:'rol'};
+  return null;
+}
+/* ชื่อสั้นของจุด: grid = ใช้ในตารางแผน (สั้นที่สุด) */
+function csShort(L,grid){const m=L.map;if(!m)return L.loc;
+  if(m.kind==='aami')return 'AAMI';if(m.kind==='dis')return 'อบระบบน้ำ';
+  if(m.point==='S5')return (grid?'':'อ่าง ')+sinkTap(m.sink,m.tap);
+  if(m.point==='S7')return 'เครื่อง '+m.machine;
+  if(m.point==='S4')return 'จุด '+m.station+(!grid&&STATION_NAME[m.station]?' '+STATION_NAME[m.station]:'');
+  if(m.porto)return portoOf(m.porto).short;
+  return m.point==='S2'?(grid?'Pre loop':'Pre loop (S2)'):m.point==='S6'?(grid?'Return':'Return (S6)'):L.loc;}
+
+async function loadCS(){
+  const url=csUrl();if(!url){cs={...cs,state:'off',err:''};return;}
+  try{
+    const r=await fetch(url+(url.includes('?')?'&':'?')+'action=data',{redirect:'follow'}),t=await r.text();let d;
+    try{d=JSON.parse(t);}catch{throw new Error(/^\s*</.test(t)?'แอปผล C/S ยังส่งข้อมูลให้ผังนี้ไม่ได้ วาง Code.gs ฉบับใหม่ แล้วทำให้ใช้งานได้ใหม่เป็นเวอร์ชันใหม่':'ลิงก์ไม่ได้ส่งข้อมูลกลับมาเป็น JSON');}
+    if(!d||d.status==='error')throw new Error(d&&d.message||'แอปผล C/S ตอบกลับว่าเกิดข้อผิดพลาด');
+    cs=csBuild(d);
+  }catch(e){cs={state:'error',locs:[],recs:[],results:[],events:[],pms:[],unmapped:[],err:e.message||String(e),cache:{}};}
+}
+function csBuild(d){
+  const locs=(d.plans||[]).filter(p=>String(p.Location||'').trim()).map(p=>{
+    const ch=(p.checks||[]).map(v=>String(v||'').includes('◉')),map=csMapLoc(p.Location),special=!!map&&map.kind!=='test';
+    const L={loc:String(p.Location).trim(),no:p.No,key:csKey(p.Location),map,special,bac:[],endo:[]};
+    for(let i=0;i<12;i++){L.bac.push(!!ch[i*2]);L.endo.push(!!ch[i*2+1]);}
+    L.any=L.bac.map((b,i)=>b||L.endo[i]);return L;});
+  const recs=[],events=[],idx={},unmapped=new Set();
+  (d.results||[]).forEach((r,i)=>{
+    const date=csDate(r.date),key=csKey(r.location),L=locs.find(x=>x.key===key),map=L?L.map:csMapLoc(r.location);
+    if(!date)return;if(!map){unmapped.add(String(r.location||'').trim());return;}
+    const val=String(r.resultValue??'').trim(),link=String(r.link||'').trim(),extra=String(r.extraLink||'').trim(),note=String(r.note||'').trim(),loc=L?L.loc:String(r.location).trim();
+    if(map.kind!=='test'){events.push({id:'CE'+i,key,loc,kind:map.kind,date,val,link,extra,note});return;}
+    const k=key+'|'+date;let o=idx[k];
+    if(!o){o=idx[k]={id:'CS'+i,point:map.point||'',porto:map.porto||'',machine:map.machine||'',sink:map.sink||'',tap:map.tap||'',station:map.station||'',loc,key,date,cfu:'',eu:'',file:'',fileEu:'',extra:'',note:'',lab:'',organism:'',createdAt:date,src:'cs'};recs.push(o);}
+    if(String(r.type||'').toUpperCase().includes('C/S')){o.cfu=val;o.file=link;}else{o.eu=val;o.fileEu=link;}
+    if(extra)o.extra=extra;if(note&&!o.note.includes(note))o.note=[o.note,note].filter(Boolean).join(' · ');
+  });
+  locs.forEach(L=>{if(!L.map)unmapped.add(L.loc);});
+  const desc=(a,b)=>String(b.date).localeCompare(String(a.date));recs.sort(desc);events.sort(desc);
+  const pms=(d.pms||[]).map((p,i)=>({id:'PM'+i,date:csDate(p.date),raw:String(p.date||''),issue:String(p.issue||'').trim(),action:String(p.action||'').trim(),note:String(p.note||'').trim(),link:String(p.link||'').trim()}))
+    .filter(p=>p.issue||p.action).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  return {state:'ok',locs,recs,results:recs.filter(r=>r.point),events,pms,unmapped:[...unmapped].filter(Boolean),err:'',cache:{}};
+}
+
+/* ---------- สถานะตามแผน: ค้างผล / แผนเดือนนี้ / ตามแผน ---------- */
+function csPlanOf(L,t){
+  const plan=L[t]&&L[t].length?L[t]:Array(12).fill(false),fy=curFY(),cm=curFyIdx(),done={};
+  const rs=t==='any'?cs.events.filter(e=>e.key===L.key):cs.recs.filter(r=>r.key===L.key&&hasVal(t==='bac'?r.cfu:r.eu));
+  rs.forEach(r=>{if(fyOf(r.date)===fy){const m=fyIdxOf(r.date);if(!done[m])done[m]=r;}});
+  if(!plan.some(Boolean))return {L,state:'noplan',plan,done,missed:[],nowPlan:false,nowDone:!!done[cm],next:-1,nextFy:fy,fy,cm};
+  const missed=[];for(let m=0;m<cm;m++)if(plan[m]&&!done[m])missed.push(m);
+  const nowPlan=plan[cm],nowDone=!!done[cm];let next=-1,nextFy=fy;
+  for(let m=cm+1;m<12;m++)if(plan[m]){next=m;break;}
+  if(next<0){next=plan.findIndex(Boolean);nextFy=fy+1;}
+  return {L,state:missed.length?'over':nowPlan&&!nowDone?'soon':'ok',plan,done,missed,nowPlan,nowDone,next,nextFy,fy,cm};
+}
+function csLocInfo(L){
+  const c=cs.cache;if(c['L'+L.key])return c['L'+L.key];
+  const rs=cs.recs.filter(r=>r.key===L.key),lastCfu=rs.find(r=>hasVal(r.cfu)),lastEu=rs.find(r=>hasVal(r.eu));
+  const cfuSt=lastCfu?resultStatus(lastCfu).cfu:null,euSt=lastEu?resultStatus(lastEu).eu:null,all=[cfuSt,euSt].filter(Boolean);
+  const worst=all.length?all.reduce((a,b)=>RANK[b]>RANK[a]?b:a):null,bac=csPlanOf(L,'bac'),endo=csPlanOf(L,'endo');
+  const health=worst==='fail'?'bad':worst==='watch'||bac.state==='over'||endo.state==='over'?'watch':rs.length?'ok':'mute';
+  return c['L'+L.key]={L,rs,lastCfu,lastEu,cfuSt,euSt,worst,bac,endo,health};
+}
+const csLocsWhere=f=>cs.state==='ok'?cs.locs.filter(L=>L.map&&f(L.map)):[];
+const PLAN_RANK={over:3,soon:2,ok:1,noplan:0};
+/* รวมสถานะของหลายจุด (เช่น อ่าง 8 ก๊อก) เป็นข้อความเดียว */
+function csAgg(list){
+  const xs=list.filter(x=>x&&x.state!=='noplan');if(!xs.length)return {plan:true,state:'noplan',text:'ไม่มีในแผน'};
+  const st=xs.reduce((a,b)=>PLAN_RANK[b.state]>PLAN_RANK[a.state]?b:a).state,one=xs.length===1?xs[0]:null;
+  let text;
+  if(st==='over'){const o=xs.filter(x=>x.state==='over');text=one?'ค้างผล '+one.missed.map(m=>FY_M[m]).join(' '):o.length===1?'ค้างผล '+o[0].missed.map(m=>FY_M[m]).join(' ')+' · '+csShort(o[0].L):'ค้างผล '+o.length+' จุด';}
+  else if(st==='soon'){const s=xs.filter(x=>x.state==='soon');text=one?'แผนเดือนนี้ ยังไม่มีผล':s.length===1?'แผนเดือนนี้ ยังไม่มีผล · '+csShort(s[0].L):'แผนเดือนนี้ ยังไม่มีผล '+s.length+' จุด';}
+  else{const now=xs.filter(x=>x.nowPlan);const nx=xs.map(x=>x.nextFy*12+x.next).filter(v=>v>=0).sort((a,b)=>a-b)[0];
+    text=now.length?'เดือนนี้ส่งตรวจครบแล้ว':nx!==undefined?'ครั้งถัดไป '+fyMonth(Math.floor(nx/12),nx%12):'ตามแผน';}
+  return {plan:true,state:st,text,items:xs};
+}
+function csPointInfo(p){
+  const c=cs.cache;if(c['P'+p.id])return c['P'+p.id];
+  const rs=db.results.filter(r=>r.point===p.id),locs=csLocsWhere(m=>m.kind==='test'&&m.point===p.id),per=locs.map(csLocInfo);
+  const lastCfu=rs.find(r=>hasVal(r.cfu)),lastEu=rs.find(r=>hasVal(r.eu));
+  const cfuSt=lastCfu?resultStatus(lastCfu).cfu:null,euSt=lastEu?resultStatus(lastEu).eu:null;
+  let worst=null,worstRec=null;[...new Set(rs.map(r=>r.key))].forEach(k=>{const a=rs.find(r=>r.key===k&&hasVal(r.cfu)),b=rs.find(r=>r.key===k&&hasVal(r.eu));
+    [[a,a&&resultStatus(a).cfu],[b,b&&resultStatus(b).eu]].forEach(([r,st])=>{if(st&&(worst===null||RANK[st]>RANK[worst])){worst=st;worstRec=r;}});});
+  const cfuDue=per.length?csAgg(per.map(x=>x.bac)):null,euDue=per.length?csAgg(per.map(x=>x.endo)):null;
+  const dueWorst=[cfuDue,euDue].some(d=>d&&d.state==='over')?'over':[cfuDue,euDue].some(d=>d&&d.state==='soon')?'soon':null;
+  let health=p.cat==='feed'||(!rs.length&&!per.length)?'mute':'ok';
+  if(worst==='fail')health='bad';else if(worst==='watch'||dueWorst==='over')health='watch';
+  return c['P'+p.id]={rs,lastCfu,lastEu,cfuDue,euDue,cfuSt,euSt,worst,worstRec,dueWorst,health,per,cs:true};
+}
+/* งานค้างของ RO เคลื่อนที่ (ไม่ได้อยู่ในจุด S) */
+function csTodo(){
+  if(cs.state!=='ok')return [];const out=[];
+  PORTO.forEach(p=>{const L=csLocFor('p',p.id);if(!L)return;const x=csLocInfo(L),s=typeof roState==='function'?roState(p.id):{ts:x.worst};
+    if(s.ts==='fail')out.push({kind:'porto',id:p.id,rank:0,title:p.name,text:'ผลตรวจล่าสุดเกินเกณฑ์'});
+    else if(s.ts==='watch')out.push({kind:'porto',id:p.id,rank:1,title:p.name,text:'ผลตรวจล่าสุดถึงระดับเฝ้าระวัง'});
+    [['เพาะเชื้อ',x.bac],['Endotoxin',x.endo]].forEach(([nm,d])=>{const a=csAgg([d]);if(a.state==='over')out.push({kind:'porto',id:p.id,rank:1,title:p.name,text:nm+' '+a.text});else if(a.state==='soon')out.push({kind:'porto',id:p.id,rank:2,title:p.name,text:nm+' '+a.text});});});
+  const A=csLocsWhere(m=>m.kind==='aami')[0];if(A){const a=csAgg([csPlanOf(A,'any')]);if(a.state==='over'||a.state==='soon')out.push({kind:'point',id:'S2',rank:a.state==='over'?1:2,title:'AAMI (Pre loop)',text:a.text});}
+  return out;
+}
+/* สีหมุด S4 แยกแต่ละทางจ่ายน้ำ */
+function csStationHealth(st){const L=csLocsWhere(m=>m.point==='S4'&&m.station===String(st))[0];return L?csLocInfo(L).health:null;}
+/* ผลล่าสุดของเครื่องไตเทียม / RO เคลื่อนที่ จากแอปผล C/S */
+function csLatestFor(kind,key){if(cs.state!=='ok')return null;return cs.recs.find(r=>kind==='m'?r.point==='S7'&&r.machine===String(key):r.porto===key)||null;}
+function csLocFor(kind,key){return csLocsWhere(m=>kind==='m'?m.point==='S7'&&m.machine===String(key):m.porto===key)[0]||null;}
+
+/* ---------- ส่วนแสดงผลในแผงด้านข้าง ---------- */
+function csOpenBtn(label,cls){return `<a class="btn ${cls===undefined?'primary':cls}" href="${esc(csUrl())}" target="_blank" rel="noopener">${esc(label||'บันทึกผลในแอปผล C/S')}</a>`;}
+function csNotice(){
+  if(cs.state==='ok')return '';
+  if(cs.state==='error')return `<div class="callout warn"><b>ดึงข้อมูลจากแอปผล C/S ไม่สำเร็จ</b> ${esc(cs.err)} · <button type="button" class="linkbtn" data-act="reload">ลองอีกครั้ง</button></div>`;
+  if(cs.state==='off')return '<p class="small">ยังไม่ได้ใส่ลิงก์แอปผล C/S ในหน้าตั้งค่า</p>';
+  return '<p class="small">กำลังโหลดผลตรวจและแผนจากแอปผล C/S…</p>';
+}
+function planChip(d,label){if(!d)return '';const cls={over:'st-bad',soon:'st-watch',ok:'st-ok',noplan:'st-none'}[d.state];return chip(cls,(label?label+' ':'')+d.text);}
+/* ตารางแผน 12 เดือน: ช่องบน = เพาะเชื้อ ช่องล่าง = Endotoxin (แถวอบระบบน้ำและ AAMI มีช่องเดียว) */
+function csMark(x,m,res){
+  const planned=x.plan[m],r=x.done&&x.done[m];
+  if(r){const st=res?res(r):null;return `<i class="pm done ${st||''}" title="${esc(fyMonth(x.fy,m)+' · มีผลแล้ว'+(st?' · '+RES_LABEL[st]:''))}"></i>`;}
+  if(!planned)return '<i class="pm"></i>';
+  if(m<x.cm)return `<i class="pm miss" title="${esc(fyMonth(x.fy,m)+' · ถึงแผนแต่ไม่มีผล')}"></i>`;
+  if(m===x.cm)return `<i class="pm due" title="${esc(fyMonth(x.fy,m)+' · แผนเดือนนี้')}"></i>`;
+  return `<i class="pm plan" title="${esc(fyMonth(x.fy,m)+' · มีแผน')}"></i>`;
+}
+function csPlanGrid(rows){
+  if(!rows.length)return '';const cm=curFyIdx();
+  const resB=r=>resultStatus(r).cfu,resE=r=>resultStatus(r).eu;
+  return `<div class="pgrid-wrap"><table class="pgrid"><thead><tr><th scope="col">จุด</th>${FY_M.map((m,i)=>`<th scope="col"${i===cm?' class="now"':''}>${m}</th>`).join('')}</tr></thead><tbody>${rows.map(({L,label})=>{
+    const one=L.special,a=one?csPlanOf(L,'any'):csPlanOf(L,'bac'),b=one?null:csPlanOf(L,'endo');
+    return `<tr><th scope="row" title="${esc(L.loc)}">${esc(label||csShort(L,true))}</th>${FY_M.map((_,m)=>{const mk=x=>csMark(x,m,one?null:x===a?resB:resE);
+      return `<td${m===cm?' class="now"':''}>${mk(a)}${b?mk(b):''}</td>`;}).join('')}</tr>`;}).join('')}</tbody></table></div>
+  <p class="pleg"><span><i class="pm done pass"></i>มีผลแล้ว</span><span><i class="pm done fail"></i>ผลเกินเกณฑ์</span><span><i class="pm due"></i>แผนเดือนนี้</span><span><i class="pm miss"></i>ถึงแผนแต่ไม่มีผล</span><span><i class="pm plan"></i>มีแผน</span>${rows.some(r=>!r.L.special)?'<span>ช่องบน เพาะเชื้อ · ช่องล่าง Endotoxin</span>':''}</p>`;
+}
+/* รายการผลตรวจ (อ่านอย่างเดียว พร้อมลิงก์รายงานจากแอปผล C/S) */
+function csHist(rs,{where=true,limit=0}={}){
+  if(!rs.length)return '<p class="empty">ยังไม่มีผลตรวจในแอปผล C/S</p>';
+  const list=limit?rs.slice(0,limit):rs,byY={};list.forEach(r=>{const y=fyOf(r.date);(byY[y]=byY[y]||[]).push(r);});
+  let h='';Object.keys(byY).sort((a,b)=>b-a).forEach(y=>{h+=`<div class="yearhead">ปีงบประมาณ ${y}</div><ul class="hist">${byY[y].map(r=>{const st=resultStatus(r);
+    return `<li><div class="row1"><b>${thDate(r.date)}${where&&resultWhere(r)?' · '+esc(resultWhere(r)):''}</b></div>
+    <div class="vals">${hasVal(r.cfu)?`<span>เพาะเชื้อ <b>${esc(r.cfu)}</b> CFU/mL</span>${resChip(st.cfu)}`:''}${hasVal(r.eu)?`<span>Endotoxin <b>${esc(r.eu)}</b> EU/mL</span>${resChip(st.eu)}`:''}</div>
+    ${r.note?`<div class="small">${esc(r.note)}</div>`:''}${r.file||r.fileEu||r.extra?`<div class="ops">${r.file?`<a href="${esc(r.file)}" target="_blank" rel="noopener">รายงานเพาะเชื้อ</a>`:''}${r.fileEu?`<a href="${esc(r.fileEu)}" target="_blank" rel="noopener">รายงาน Endotoxin</a>`:''}${r.extra?`<a href="${esc(r.extra)}" target="_blank" rel="noopener">ภาพแนบ</a>`:''}</div>`:''}</li>`;}).join('')}</ul>`;});
+  if(limit&&rs.length>limit)h+=`<p class="small">แสดง ${limit} ครั้งล่าสุด จากทั้งหมด ${rs.length} ครั้ง</p>`;
+  return h;
+}
+/* บันทึกการอบระบบน้ำ / ผล AAMI */
+function csEvents(kind,limit){
+  const ev=cs.events.filter(e=>e.kind===kind).slice(0,limit||6);
+  if(!ev.length)return '<p class="empty">ยังไม่มีบันทึกในแอปผล C/S</p>';
+  return `<ul class="hist">${ev.map(e=>`<li><div class="row1"><b>${thDate(e.date)}</b>${e.val?`<span class="small">${esc(e.val)}</span>`:''}</div>${e.note?`<div class="small">${esc(e.note)}</div>`:''}${e.link||e.extra?`<div class="ops">${e.link?`<a href="${esc(e.link)}" target="_blank" rel="noopener">เปิดรายงาน</a>`:''}${e.extra?`<a href="${esc(e.extra)}" target="_blank" rel="noopener">ภาพแนบ</a>`:''}</div>`:''}</li>`).join('')}</ul>`;
+}
+/* ส่วนผลตรวจของเครื่องไตเทียมหรือ RO เคลื่อนที่ในแผง */
+function csEquipBlock(kind,key){
+  if(cs.state!=='ok')return csNotice();
+  const L=csLocFor(kind,key),rs=cs.recs.filter(r=>kind==='m'?r.point==='S7'&&r.machine===String(key):r.porto===key);
+  let h='';
+  if(L){const x=csLocInfo(L);h+=`<p class="small">ชื่อจุดในแอป: ${esc(L.loc)}</p><div class="chips">${planChip(csAgg([x.bac]),'เพาะเชื้อ')} ${planChip(csAgg([x.endo]),'Endotoxin')}</div>${csPlanGrid([{L,label:csShort(L,true)}])}`;}
+  else h+='<p class="small">ไม่พบจุดนี้ในแผนรายปีของแอปผล C/S</p>';
+  return h+csHist(rs,{where:false,limit:6})+`<div class="actions">${csOpenBtn('บันทึกผลในแอปผล C/S','')}</div>`;
+}
+/* แผนอบระบบน้ำ (แถว "อบระบบน้ำ" ในแผนรายปี) */
+function csDisinfectBlock(){
+  if(cs.state!=='ok')return csNotice();
+  const L=csLocsWhere(m=>m.kind==='dis')[0];
+  if(!L)return '<p class="small">ไม่พบแถว "อบระบบน้ำ" ในแผนรายปีของแอปผล C/S</p>';
+  const x=csPlanOf(L,'any'),last=cs.events.find(e=>e.kind==='dis');
+  return `<dl class="facts"><dt>อบครั้งล่าสุด</dt><dd>${last?thDate(last.date):'ยังไม่มีบันทึก'}</dd><dt>ตามแผน</dt><dd>${planChip(csAgg([x]))}</dd></dl>${csPlanGrid([{L,label:'อบระบบน้ำ'}])}${csEvents('dis',4)}<div class="actions">${csOpenBtn('บันทึกการอบในแอปผล C/S','')}</div>`;
+}
+/* แผนเดือนนี้ (เหมือนหน้าแผนรายเดือนของแอปผล C/S) */
+function csMonthBlock(){
+  if(cs.state!=='ok')return csNotice();
+  const fy=curFY(),cm=curFyIdx(),rows=[];
+  cs.locs.forEach(L=>{if(!L.map)return;
+    if(L.special){const x=csPlanOf(L,'any');if(x.nowPlan)rows.push({L,t:L.map.kind==='dis'?'อบระบบน้ำ':'AAMI',done:x.nowDone});return;}
+    const b=csPlanOf(L,'bac'),e=csPlanOf(L,'endo');
+    if(b.nowPlan)rows.push({L,t:'เพาะเชื้อ',done:b.nowDone});if(e.nowPlan)rows.push({L,t:'Endotoxin',done:e.nowDone});});
+  if(!rows.length)return `<p class="empty">ไม่มีแผนเก็บตัวอย่างเดือน ${esc(fyMonth(fy,cm))}</p>`;
+  const n=rows.filter(r=>r.done).length;
+  return `<p class="small">ส่งตรวจแล้ว ${n} จาก ${rows.length} รายการ</p><ul class="mplan">${rows.map(r=>{const m=r.L.map,sel=m.point?`point:${m.point}`:m.porto?`porto:${m.porto}`:'';
+    return `<li class="${r.done?'ok':''}"><${sel?`button type="button" data-sel="${sel}"`:'span'}><b>${esc(csShort(r.L))}</b><span>${esc(r.t)}${r.done?' · ส่งแล้ว':''}</span></${sel?'button':'span'}></li>`;}).join('')}</ul>`;
+}
+/* บันทึก PM ระบบน้ำ */
+function csPMBlock(limit){
+  if(cs.state!=='ok')return csNotice();
+  if(!cs.pms.length)return '<p class="empty">ยังไม่มีบันทึก PM ในแอปผล C/S</p>';
+  const list=cs.pms.slice(0,limit||4);
+  return `<ul class="hist">${list.map(p=>`<li><div class="row1"><b>${p.date?thDate(p.date):esc(p.raw)}</b></div>${p.issue?`<div><span class="small">ปัญหาที่พบ</span> ${esc(p.issue)}</div>`:''}${p.action?`<div><span class="small">การแก้ไข</span> ${esc(p.action)}</div>`:''}${p.note?`<div class="small">${esc(p.note)}</div>`:''}${p.link?`<div class="ops"><a href="${esc(p.link)}" target="_blank" rel="noopener">เปิดไฟล์แนบ</a></div>`:''}</li>`).join('')}</ul>${cs.pms.length>list.length?`<p class="small">แสดง ${list.length} ครั้งล่าสุด จากทั้งหมด ${cs.pms.length} ครั้ง</p>`:''}`;
+}
 
 /* =====================================================================
    ฉาก 3 มิติ ชั้น 2 อาคาร 4 ตามพิมพ์เขียว (Lay out plan และ Single line diagram)
@@ -1415,16 +1683,20 @@ function buildPipes(MACH){
 /* ---------- จุดเก็บตัวอย่างน้ำ และหมุดอธิบายขั้นตอน ---------- */
 function buildPoints(MACH){
   const m2=MACH.find(m=>m.n===2);
-  const SP={S1:[[35.95,.72,6.45],[0,.5,1]],S2:[[34.6,1.0,6.53],[0,.6,1]],S4:[[29.66,LY,11.45],[-1,.65,0]],S5:[[33.28,1.24,12.22],[0,.6,1]],S6:[[34.42,1.9,7.72],[0,.45,1]],S7:[[m2.g.position.x-.24,.9,m2.g.position.z],[-1,.55,0]]};
-  Object.entries(SP).forEach(([id,[p,d]])=>{
+  const tapOf=n=>MACH.find(m=>m.n===n).tap;
+  /* S4 = ทางจ่ายน้ำ 6 (เก้าอี้ 6), 7 (ICU ห้อง 5), 8 (ICU ห้อง 4) มีหมุดที่ก๊อกทั้งสามจุด */
+  const SP={S1:[[35.95,.72,6.45],[0,.5,1]],S2:[[34.6,1.0,6.53],[0,.6,1]],S4:[[tapOf(6),[1,.65,0],6],[tapOf(7),[0,.65,-1],7],[tapOf(8),[0,.65,-1],8]],S5:[[33.28,1.24,12.22],[0,.6,1]],S6:[[34.42,1.9,7.72],[0,.45,1]],S7:[[m2.g.position.x-.24,.9,m2.g.position.z],[-1,.55,0]]};
+  Object.entries(SP).forEach(([id,v])=>(Array.isArray(v[0][0])?v:[v]).forEach(([p,d,st],k,arr)=>{
     const g=new THREE.Group();g.position.set(...p);g.userData.point=id;S3D.plant.add(g);S3D.pickables.push(g);
     const dir=new THREE.Vector3(...d).normalize(),len=.5,tip=dir.clone().multiplyScalar(len);
     rb(g,.08,.08,.08,.02,M('#f1c34e',.4,.1),0,0,0);
     stub(g,[0,0,0],[tip.x*.8,tip.y*.8,tip.z*.8],.011,M('#5c7688',.4,.3));
     const headMat=new THREE.MeshStandardMaterial({color:'#1f9d6b',emissive:'#1f9d6b',emissiveIntensity:.35,roughness:.35});
     const head=sph(g,.09,headMat,tip.x,tip.y,tip.z);
-    POINT3D[id]={g,head,headMat,anchor:new THREE.Vector3(p[0]+tip.x,p[1]+tip.y+.16,p[2]+tip.z)};
-  });
+    const anchor=new THREE.Vector3(p[0]+tip.x,p[1]+tip.y+.16,p[2]+tip.z);
+    if(!k)POINT3D[id]={g,head,headMat,anchor};
+    if(arr.length>1)(POINT3D[id].subs=POINT3D[id].subs||[]).push({st,g,head,headMat,anchor});
+  }));
   S3D.mk=[0,1,2].map(()=>{const m=new THREE.Mesh(new THREE.SphereGeometry(.11,20,14),new THREE.MeshStandardMaterial({color:'#ffffff',emissive:'#ffffff',emissiveIntensity:.8,transparent:true,opacity:.9}));m.visible=false;S3D.plant.add(m);return m;});
   S3D.dyn=[];
 }
@@ -1455,7 +1727,7 @@ function initScene(container,onPick){
     ctrl:{theta:0,phi:.8,r:44,target:new THREE.Vector3(-19,0,7.5)},want:null,onPick,view:'floor'};
   buildPlant();
   plant.scale.x=-1;plant.updateMatrixWorld(true);{const W=plant.matrixWorld;
-    Object.values(COMP3D).forEach(e=>{e.anchor.applyMatrix4(W);e.center.applyMatrix4(W);});Object.values(POINT3D).forEach(e=>e.anchor.applyMatrix4(W));
+    Object.values(COMP3D).forEach(e=>{e.anchor.applyMatrix4(W);e.center.applyMatrix4(W);});Object.values(POINT3D).forEach(e=>(e.subs?e.subs.map(s=>s.anchor):[e.anchor]).forEach(a=>a.applyMatrix4(W)));
     [MTAGS,STAGS,GTAGS,RTAGS].forEach(L=>L.forEach(t=>t.pos.applyMatrix4(W)));}
   buildArrows();buildCircuit();prepFade();
   { const n=72,P=new THREE.InstancedMesh(new THREE.SphereGeometry(.017,8,6),new THREE.MeshBasicMaterial({color:'#ffffff',toneMapped:false}),n);P.instanceMatrix.setUsage(THREE.DynamicDrawUsage);P.frustumCulled=false;P.visible=false;
@@ -1530,7 +1802,7 @@ function setNotes(list,col){
 function setMode3D(mode){
   S3D.mode=mode;S3D.front=null;S3D.heatOn=false;
   setLines({},'base');PIPES.forEach(l=>paintLine(l));setNotes([],'#fff');
-  Object.values(POINT3D).forEach(p=>p.head.scale.setScalar(mode==='sample'?1.5:1));
+  Object.values(POINT3D).forEach(p=>(p.subs||[p]).forEach(s=>s.head.scale.setScalar(mode==='sample'?1.5:1)));
   if(mode==='chem'||mode==='heat')setDisStep3D(mode,0,true);
   S3D.labelSig='';
 }
@@ -1612,8 +1884,10 @@ function updateParticles(t){
     P.setColorAt(i,r===0?pr.cRiser:(y>bt?pr.cTop:pr.cBot));}
   P.instanceMatrix.needsUpdate=true;P.instanceColor.needsUpdate=true;
 }
+/* สีหมุดย่อย (S4 แยกตามทางจ่ายน้ำ) */
+function subHealth(p,s){return (s&&s.st&&cs.state==='ok'&&csStationHealth(s.st))||pointInfo(p).health;}
 function setStatus3D(){
-  POINTS.forEach(p=>{const e=POINT3D[p.id];if(!e)return;const c=HEALTH_COLOR[pointInfo(p).health];e.headMat.color.set(c);e.headMat.emissive.set(c);});
+  POINTS.forEach(p=>{const e=POINT3D[p.id];if(!e)return;(e.subs||[e]).forEach(s=>{const c=HEALTH_COLOR[subHealth(p,s)];s.headMat.color.set(c);s.headMat.emissive.set(c);});});
   S3D.labelSig='';
 }
 function select3D(kind,id){
@@ -1648,7 +1922,8 @@ function tick3D(dt,t,raw){
 const _v=new THREE.Vector3();
 function labelDefs(){
   const out=[],m=S3D.mode,dis=m==='chem'||m==='heat',sel=S3D.selected,proc=S3D.proc;
-  POINTS.forEach(p=>out.push({key:'p'+p.id,kind:'point',id:p.id,pos:POINT3D[p.id].anchor,html:`<b>${p.id}</b>${m==='sample'?'<span>'+esc(p.name)+'</span>':''}`,cls:'lp lp-'+pointInfo(p).health,pr:0}));
+  POINTS.forEach(p=>{const e=POINT3D[p.id];if(e.subs){e.subs.forEach(s=>out.push({key:'p'+p.id+'_'+s.st,kind:'point',id:p.id,pos:s.anchor,html:`<b>${p.id}</b>${m==='sample'?'<span>ทางจ่ายน้ำ '+s.st+'</span>':''}`,cls:'lp lp-'+subHealth(p,s),pr:0}));return;}
+    out.push({key:'p'+p.id,kind:'point',id:p.id,pos:e.anchor,html:`<b>${p.id}</b>${m==='sample'?'<span>'+esc(p.name)+'</span>':''}`,cls:'lp lp-'+pointInfo(p).health,pr:0});});
   (S3D.dyn||[]).forEach(n=>out.push({key:n.id,kind:'note',id:n.id,pos:n.pos,html:esc(n.text),cls:'ln ln-'+(proc?'tank':dis?m:'tank'),pr:.5}));
   if(m!=='sample'&&!proc){
     MTAGS.forEach(t=>{const b=BADGE[hdOf(t.no).badge];out.push({key:'m'+t.no,kind:'machine',id:String(t.no),pos:t.pos,html:`<b>${t.no}</b><i class="bdg" style="background:${b.bg}">${esc(b.text)}</i>`,cls:'lt',pr:1.5,tag:true});});
@@ -1851,7 +2126,10 @@ function hdUnit(hm,x,z,ry){
   MTAGS.push({no:hm.no,pos:new THREE.Vector3(x,2.2,z)});
   return {g:root,rear:rotP(x,z,ry,.07,.3,-.3)};
 }
-function hdState(no){const hm=hdOf(no),m=linkedHD(no),t=m?srTests(m.id)[0]:null;return {hm,m,h:m?srHealth(m):'mute',test:t,ts:t?srTestStatus(t).overall:null,f:srFilter(m),run:m?runStatus(m):true};}
+/* ผลตรวจล่าสุดของเครื่อง: เลือกผลที่ใหม่กว่าระหว่างแอปผล C/S กับระบบเครื่องไตเทียม และระบบน้ำเคลื่อนที่ */
+function newestTest(t,c){const td=t?String(t.date).slice(0,10):'';if(c&&(!t||c.date>=td))return {test:c,ts:resultStatus(c).overall};return {test:t,ts:t?srTestStatus(t).overall:null};}
+function equipHealth(f,x){if(f.state==='over'||x.ts==='fail')return 'bad';if(f.state==='soon'||x.ts==='watch')return 'watch';if(!x.test&&f.state!=='ok')return 'mute';return 'ok';}
+function hdState(no){const hm=hdOf(no),m=linkedHD(no),f=srFilter(m),x=newestTest(m?srTests(m.id)[0]:null,csLatestFor('m',no));return {hm,m,h:m||x.test?equipHealth(f,x):'mute',test:x.test,ts:x.ts,f,run:m?runStatus(m):true};}
 const SCR_RUN={bad:'#dc2626',watch:'#d97706',ok:'#0284c7',mute:'#475569'};
 function drawHDScreen(o,t){
   const g=o.scr.g,w=512,h=384,s=hdState(o.hm.no),b=BADGE[o.hm.badge],F=(wt,px)=>{g.font=`${wt} ${px}px ${FONT}`;};
@@ -1870,7 +2148,7 @@ function drawHDScreen(o,t){
   g.fillStyle='#0369a1';g.fillText(fitFnt(g,fl.head,255,15,700),26,232);
   g.fillStyle='#bae6fd';g.fillRect(26,246,255,14);if(fl.frac!=null){g.fillStyle=fl.col;g.fillRect(26,246,Math.max(3,255*Math.min(1,fl.frac)),14);}
   g.fillStyle='#0f172a';g.fillText(fitFnt(g,fl.l1,255,14,500),26,282);g.fillText(fitFnt(g,fl.l2,255,14,500),26,304);
-  const tv=!s.m?['—','#475569','#e2e8f0']:!s.test?['ยังไม่มีผล','#475569','#e2e8f0']:s.ts==='fail'?['เกินเกณฑ์','#dc2626','#fee2e2']:s.ts==='watch'?['เฝ้าระวัง','#b45309','#fef3c7']:s.ts==='pass'?['ผ่านเกณฑ์','#059669','#d1fae5']:['บันทึกแล้ว','#0f172a','#e2e8f0'];
+  const tv=!s.m&&!s.test?['—','#475569','#e2e8f0']:!s.test?['ยังไม่มีผล','#475569','#e2e8f0']:s.ts==='fail'?['เกินเกณฑ์','#dc2626','#fee2e2']:s.ts==='watch'?['เฝ้าระวัง','#b45309','#fef3c7']:s.ts==='pass'?['ผ่านเกณฑ์','#059669','#d1fae5']:['บันทึกแล้ว','#0f172a','#e2e8f0'];
   const sv=!s.m?['—','#475569','#e2e8f0']:s.run?[s.m.status||'พร้อมใช้งาน','#2563eb','#dbeafe']:[s.m.status,'#b45309','#fef3c7'];
   [['ผลตรวจล่าสุด',...tv],['วันที่ตรวจ',s.test?thDate(s.test.date):'—','#0f172a','#e2e8f0'],['สถานะเครื่อง',...sv],['จุดจ่ายน้ำ','จุด '+o.hm.station+' · '+STATION_NAME[o.hm.station],'#0f172a','#e2e8f0']].forEach(([lb,v,c,bg],i)=>{
     const py=58+i*66;g.fillStyle=bg;g.fillRect(305,py,192,58);g.strokeStyle='#cbd5e1';g.lineWidth=2;g.strokeRect(305,py,192,58);
@@ -1914,13 +2192,13 @@ function roUnit(p,x,z,ry){
   RTAGS.push({id:p.id,pos:new THREE.Vector3(x,1.25*sc+.18,z)});
   return o;
 }
-function roState(pid){const m=linkedRO(pid),t=m?srTests(m.id)[0]:null;return {m,h:m?srHealth(m):'mute',test:t,ts:t?srTestStatus(t).overall:null,run:m?runStatus(m):true};}
+function roState(pid){const m=linkedRO(pid),x=newestTest(m?srTests(m.id)[0]:null,csLatestFor('p',pid));return {m,h:m||x.test?equipHealth({state:'none'},x):'mute',test:x.test,ts:x.ts,run:m?runStatus(m):true};}
 function drawROScreen(o,t){
   const g=o.scr.g,w=384,h=240,s=roState(o.p.id),pad=10,hh=36;
   g.fillStyle='#061f28';g.fillRect(0,0,w,h);g.fillStyle=s.m&&!s.run?'#E39A2B':'#19B5A5';g.fillRect(0,0,w,hh);
   g.fillStyle='#062028';g.textBaseline='middle';g.font=`700 18px ${FONT}`;g.textAlign='right';g.fillText(clockNow(false),w-12,hh/2+1);g.textAlign='left';g.fillText(fitTxt(g,s.m?s.m.name:o.p.name,w-90),12,hh/2+1);
   const tile=(x,y,tw,th,lb,v,col,sub)=>{g.fillStyle='#0b2f3b';rr2(g,x,y,tw,th,8);g.fill();g.fillStyle='#86b9cc';g.font=`500 14px ${FONT}`;g.fillText(fitTxt(g,lb,tw-20),x+11,y+18);g.fillStyle=col;g.fillText(fitFnt(g,v,tw-20,24,700),x+11,y+46);if(sub){g.fillStyle='#a6c8d4';g.fillText(fitFnt(g,sub,tw-20,13,400),x+11,y+70);}};
-  const tv=!s.m?['—','#a6c8d4','ยังไม่เชื่อมข้อมูล']:!s.test?['ยังไม่มีผล','#a6c8d4','C/S และ Endotoxin']:[s.ts==='fail'?'เกินเกณฑ์':s.ts==='watch'?'เฝ้าระวัง':s.ts==='pass'?'ผ่านเกณฑ์':'บันทึกแล้ว',s.ts==='fail'?'#ff6b5c':s.ts==='watch'?'#ffb740':'#2fe0c9','ตรวจ '+thDate(s.test.date)];
+  const tv=!s.m&&!s.test?['—','#a6c8d4','ยังไม่เชื่อมข้อมูล']:!s.test?['ยังไม่มีผล','#a6c8d4','C/S และ Endotoxin']:[s.ts==='fail'?'เกินเกณฑ์':s.ts==='watch'?'เฝ้าระวัง':s.ts==='pass'?'ผ่านเกณฑ์':'บันทึกแล้ว',s.ts==='fail'?'#ff6b5c':s.ts==='watch'?'#ffb740':'#2fe0c9','ตรวจ '+thDate(s.test.date)];
   const tw=(w-pad*3)/2;tile(pad,hh+9,tw,88,'ผลตรวจล่าสุด',...tv);tile(pad*2+tw,hh+9,tw,88,'สถานะเครื่อง',s.m?(s.m.status||'พร้อมใช้งาน'):'—',s.run?'#2fe0c9':'#ffb740',o.p.size==='large'?'เครื่องใหญ่':'เครื่องเล็ก');
   const fy=170,names=['น้ำเข้า','กรอง','RO','จ่ายน้ำ'],nx=i=>pad+30+i*(w-pad*2-60)/3;
   g.strokeStyle='#2a4c5a';g.lineWidth=5;g.beginPath();g.moveTo(nx(0),fy);g.lineTo(nx(3),fy);g.stroke();
@@ -2023,7 +2301,7 @@ function busy(on,text){$('#busy').hidden=!on;if(text)$('#busyText').textContent=
 function chip(cls,text){return `<span class="chip ${cls}">${esc(text)}</span>`;}
 function stateChip(c,i){const s=STATE[i.state];return s&&s.label?chip(s.cls,s.label):'';}
 function resChip(st){return st?chip(RES_CLS[st],RES_LABEL[st]):'';}
-function dueChip(d,label){if(!d)return '';if(d.state==='nodata')return chip('st-none','ยังไม่มีผล'+label);const cls=d.state==='over'?'st-bad':d.state==='soon'?'st-watch':'st-ok';return chip(cls,label+' '+thDate(d.due)+(d.state==='over'?' (เลยกำหนด)':''));}
+function dueChip(d,label){if(!d)return '';if(d.plan)return planChip(d,label);if(d.state==='nodata')return chip('st-none','ยังไม่มีผล'+label);const cls=d.state==='over'?'st-bad':d.state==='soon'?'st-watch':'st-ok';return chip(cls,label+' '+thDate(d.due)+(d.state==='over'?' (เลยกำหนด)':''));}
 
 let modalCleanup=[];
 function openModal(title,body,{submitLabel='บันทึก',onSubmit,danger=false,hideSubmit=false}={}){
@@ -2075,8 +2353,9 @@ async function loadAll(){
 let liveTimer=0;
 async function loadLive(){
   clearTimeout(liveTimer);liveTimer=setTimeout(loadLive,LIVE_REFRESH_MIN*60000);
-  await Promise.all([loadDaily(),loadShowroom()]);
-  if(has3D)applyLive3D();renderPanel();
+  await Promise.all([loadDaily(),loadShowroom(),loadCS()]);
+  db.results=cs.state==='ok'?cs.results:isDemo()?db.results:[];
+  render();if(has3D)applyLive3D();
 }
 function render(){
   renderStatus();renderPanel();renderTables();
@@ -2136,10 +2415,10 @@ function renderStatus(){
   const comps=allComps().filter(tracked).map(c=>({c,i:compInfo(c)})),pts=POINTS.map(p=>({p,i:pointInfo(p)}));
   const over=comps.filter(x=>x.i.state==='over'),soon=comps.filter(x=>x.i.state==='soon');
   const due=pts.filter(x=>[x.i.cfuDue,x.i.euDue].some(d=>d&&d.state==='over')),fail=pts.filter(x=>x.i.worst==='fail'),watch=pts.filter(x=>x.i.worst==='watch');
-  const items=[[over,'เลยกำหนดเปลี่ยน','#d9483b','comp'],[soon,'ใกล้ครบรอบเปลี่ยน','#e39a2b','comp'],[due,'ถึงรอบตรวจน้ำ','#e39a2b','point'],[fail,'ผลล่าสุดเกินเกณฑ์','#d9483b','point'],[watch,'ผลล่าสุดถึงระดับเฝ้าระวัง','#e39a2b','point']];
+  const items=[[over,'เลยกำหนดเปลี่ยน','#d9483b','comp'],[soon,'ใกล้ครบรอบเปลี่ยน','#e39a2b','comp'],[due,cs.state==='ok'?'ค้างผลตามแผนตรวจ':'ถึงรอบตรวจน้ำ','#e39a2b','point'],[fail,'ผลล่าสุดเกินเกณฑ์','#d9483b','point'],[watch,'ผลล่าสุดถึงระดับเฝ้าระวัง','#e39a2b','point']];
   $('#statusline').innerHTML=items.map(([arr,label,col,kind],i)=>`<button type="button" class="pill${arr.length?'':' zero'}" data-i="${i}" ${arr.length?'':'disabled'}><i style="background:${arr.length?col:'#b9c6cf'}"></i>${label} ${arr.length}</button>`).join('');
   $('#statusline').querySelectorAll('.pill').forEach(b=>b.onclick=()=>{const [arr,, ,kind]=items[+b.dataset.i];if(arr[0])select(kind,kind==='comp'?arr[0].c.id:arr[0].p.id,true);});
-  const S=sampling();$('#samplingRule').textContent='เตือนรอบตรวจ: เพาะเชื้อทุก '+S.cfuMonths+' เดือน · Endotoxin ทุก '+S.euMonths+' เดือน';
+  const S=sampling();$('#samplingRule').textContent=cs.state==='ok'?'ผลและแผนตรวจจากแอปผล C/S · ปีงบประมาณ '+curFY():cs.state==='error'?'ดึงผลจากแอปผล C/S ไม่สำเร็จ':'เตือนรอบตรวจ: เพาะเชื้อทุก '+S.cfuMonths+' เดือน · Endotoxin ทุก '+S.euMonths+' เดือน';
 }
 
 /* ---------- แผงด้านข้าง ---------- */
@@ -2164,16 +2443,19 @@ function panelOverview(){
   <h3>ค่าจากแบบบันทึกประจำวัน</h3>${liveSrc()}${dailyBadList()}
   <div class="actions"><button type="button" class="btn" data-sel="comp:orp">ตู้ไฟ ORP</button>${GAUGES.filter(g=>g.key).slice(0,6).map(g=>`<button type="button" class="btn small${gaugeState(g)==='bad'?' warnbtn':''}" data-sel="gauge:${g.id}">${esc(g.short)}</button>`).join('')}</div>
   <h3>เครื่องไตเทียม และ RO เคลื่อนที่</h3>${machineList()}
+  <h3>บันทึก PM ระบบน้ำ</h3>${csPMBlock(3)}${cs.state==='ok'?`<div class="actions">${csOpenBtn('ดูและบันทึก PM ในแอปผล C/S','')}</div>`:''}
   <h3>ต้องดำเนินการ</h3>${todo.length?`<ul class="todo">${todo.slice(0,12).map(t=>`<li><button type="button" style="--c:${col[t.rank]}" data-sel="${t.kind}:${t.id}"><b>${esc(t.title)}</b><span>${esc(t.text)}</span></button></li>`).join('')}</ul>${todo.length>12?`<p class="small">และอีก ${todo.length-12} รายการในตารางด้านล่าง</p>`:''}`:'<p class="empty">ทุกรายการอยู่ในรอบ ไม่มีงานค้าง</p>'}
-  <h3>จุดเก็บตัวอย่างน้ำ</h3>${pointList()}`;
+  <h3>จุดเก็บตัวอย่างน้ำ</h3>${pointList()}${cs.state==='ok'&&cs.unmapped.length?`<p class="small">จุดในแอปผล C/S ที่ยังไม่ได้ระบุตำแหน่งในผัง: ${esc(cs.unmapped.join(', '))}</p>`:''}`;
 }
 function pointList(){return `<div class="plist">${POINTS.map(p=>`<button type="button" data-sel="point:${p.id}"><i style="background:${HEALTH_COLOR[pointInfo(p).health]}"></i><span><b>${p.id}</b> ${esc(p.name)}</span></button>`).join('')}</div>`;}
 function panelSampling(){
   return `<h2>จุดเก็บตัวอย่างน้ำ</h2>
-  <div class="callout"><b>Dialysis water</b> คือ น้ำบริสุทธิ์ที่ผ่าน RO membrane แล้ว และไม่ถูกเจือปน เก็บตรวจที่ S2 น้ำ RO ออกจากเครื่อง · S4 จุดจ่ายน้ำจุดแรก (เตียง 1) · S5 อ่างล้างตัวกรอง (ระบุอ่าง) · S6 ท่อขากลับก่อนเข้า Break tank</div>
+  <div class="callout"><b>Dialysis water</b> คือ น้ำบริสุทธิ์ที่ผ่าน RO membrane แล้ว และไม่ถูกเจือปน เก็บตรวจที่ S2 น้ำ RO ออกจากเครื่อง · S4 ทางจ่ายน้ำ 6, 7, 8 · S5 อ่างล้างตัวกรอง (ระบุอ่าง) · S6 ท่อขากลับก่อนเข้า Break tank</div>
   <div class="callout"><b>Dialysis fluid</b> คือ น้ำบริสุทธิ์ที่ผ่าน RO membrane แล้วผสมกับน้ำยา A, B ในสัดส่วนที่เหมาะสม ผ่านเข้าเครื่องไตเทียม ได้น้ำยาไตเทียมมาตรฐาน เก็บตรวจที่จุดเดียวคือ S7 น้ำยาไตเทียมจากเครื่องไตเทียม</div>
   <p class="small">S1 อยู่ก่อนเข้าเครื่อง RO ใช้เป็นข้อมูลเปรียบเทียบ ไม่ตัดสินผ่านเกณฑ์ · ระบบตามพิมพ์เขียวไม่มีถังเก็บน้ำ RO จึงไม่มีจุด S3</p>
-  <h3>เลือกจุดเพื่อดูผลและบันทึก</h3>${pointList()}`;
+  <h3>แผนเก็บตัวอย่างเดือน ${esc(fyMonth(curFY(),curFyIdx()))}</h3>${csMonthBlock()}
+  <h3>เลือกจุดเพื่อดูผลและแผนตรวจ</h3>${pointList()}
+  <div class="actions">${csOpenBtn()}</div>`;
 }
 function panelDisinfect(m){
   const chem=m==='chem',steps=DIS_STEPS[m],cur=player&&player.type==='dis'&&player.id===m?player.i:-1;
@@ -2181,6 +2463,7 @@ function panelDisinfect(m){
   <h2 style="margin-top:8px">${chem?'ขั้นตอนอบด้วยน้ำยา Peracetic':'ขั้นตอนอบด้วยน้ำร้อน'}</h2>
   <p>วนเฉพาะท่อวนน้ำ RO ตามท่อเลี่ยงในแบบ คือ Break tank → ปั๊มหมุนเวียน → ท่อเลี่ยง → จุดจ่ายน้ำ 1–8 ห้องไตเทียมและ ICU → อ่างล้างตัวกรอง → กลับ Break tank โดยปิดวาล์วเครื่อง RO ไว้ ภาพเล่นทีละขั้นเอง กดขั้นที่ต้องการเพื่อดูซ้ำได้</p>
   <ol class="steps sel">${steps.map((s,i)=>`<li><button type="button" data-dstep="${i}" class="${i===cur?'on':''}"><b>${esc(s.t)}</b><span>${esc(s.d)}</span></button></li>`).join('')}</ol>
+  ${chem?`<h3>แผนอบระบบน้ำ ปีงบประมาณ ${curFY()}</h3>${csDisinfectBlock()}`:''}
   ${chem?'':'<div class="callout">การอบด้วยความร้อนไม่กำจัดไบโอฟิล์มที่เกาะแน่นในท่อแล้ว จึงยังควรอบด้วยสารเคมีเป็นระยะตามแนวทางของหน่วย</div>'}
   <div class="callout warn">ลำดับนี้เป็นแนวทางทั่วไป ชนิดน้ำยา ความเข้มข้น อุณหภูมิ และเวลา ให้ใช้ตามคำแนะนำของผู้ผลิตระบบน้ำและคู่มือของหน่วย</div>
   <div class="actions">${chem?'<button type="button" class="btn" data-sel="comp:peracetic">Valve Peracetic</button>':'<button type="button" class="btn" data-sel="comp:tl">TL ท่อขากลับ</button>'}<button type="button" class="btn" data-sel="comp:bypassv">ท่อเลี่ยง</button><button type="button" class="btn" data-sel="comp:breaktank">Break tank</button></div>`;
@@ -2275,7 +2558,7 @@ function srBlock(kind,key,m){
   h+=`<dl class="facts">${rows.map(([a,b])=>`<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join('')}`;
   if(kind==='hd'){const f=srFilter(m),ft=f.state==='none'?'ไม่มี':f.state==='nodata'?'มี · ยังไม่บันทึกการเปลี่ยน':f.state==='nodue'?'เปลี่ยนล่าสุด '+thDate(f.last.date):'เปลี่ยนล่าสุด '+thDate(f.last.date)+' · '+(f.state==='over'?'เลยกำหนด '+(-f.days)+' วัน':'ครบ '+thDate(f.due)+' (อีก '+f.days+' วัน)');
     h+=`<dt>Bacteria filter</dt><dd>${esc(ft)} ${f.state==='over'?chip('st-bad','เลยกำหนด'):f.state==='soon'?chip('st-watch','ใกล้ครบ'):''}</dd>`;}
-  h+='</dl><h3>ผลตรวจ C/S และ Endotoxin</h3>';
+  h+='</dl><h3>ผลตรวจที่บันทึกในระบบเครื่องไตเทียม และระบบน้ำเคลื่อนที่</h3>';
   const ts=srTests(m.id);if(!ts.length)return h+'<p class="empty">ยังไม่มีผลตรวจของเครื่องนี้</p>';
   const byY={};ts.forEach(t=>{const y=beYear(t.date)||'ไม่ระบุปี';(byY[y]=byY[y]||[]).push(t);});
   Object.keys(byY).sort((a,b)=>b-a).forEach(y=>{h+=`<div class="yearhead">พ.ศ. ${y}</div><ul class="hist">${byY[y].map(t=>{const st=srTestStatus(t);return `<li><div class="row1"><b>${thDate(t.date)} · ${esc(srPointName(t.point))}</b><span class="small">${esc(t.lab||'')}</span></div>
@@ -2284,37 +2567,35 @@ function srBlock(kind,key,m){
 }
 function panelMachine(no){
   const hm=hdOf(no);if(!hm)return panelOverview();const b=BADGE[hm.badge],s=hdState(no),ht=HEALTH_TXT[s.h];
-  let h=`${backBtn()}<div class="kicker"><span class="bdg big" style="background:${b.bg}">${esc(b.text)}</span>${chip('','จุดจ่ายน้ำ '+hm.station+' · '+STATION_NAME[hm.station])}${s.m?chip(ht[0],ht[1]):''}</div>
+  let h=`${backBtn()}<div class="kicker"><span class="bdg big" style="background:${b.bg}">${esc(b.text)}</span>${chip('','จุดจ่ายน้ำ '+hm.station+' · '+STATION_NAME[hm.station])}${s.m||s.test?chip(ht[0],ht[1]):''}</div>
   <h2>เครื่องไตเทียม หมายเลข ${hm.no}</h2><p><b>สัญลักษณ์ ${esc(b.text)}</b> ${esc(b.desc)}</p>`;
   h+=`<div class="actions"><button type="button" class="btn primary" data-act="showroom" data-k="machine" data-id="${hm.no}">ดูและบันทึกข้อมูลเครื่อง</button></div>`;
-  h+=srBlock('hd',String(hm.no),s.m);
-  const rs=db.results.filter(r=>r.point==='S7'&&String(r.machine)===String(hm.no)).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-  h+=`<h3>น้ำยาไตเทียมจากเครื่องนี้ (S7 ในผังนี้)</h3>${rs.length?`<ul class="hist">${rs.slice(0,4).map(r=>{const st=resultStatus(r);return `<li><div class="row1"><b>${thDate(r.date)}</b></div><div class="vals">${hasVal(r.cfu)?`<span>เพาะเชื้อ <b>${esc(r.cfu)}</b> CFU/mL</span>${resChip(st.cfu)}`:''}${hasVal(r.eu)?`<span>Endotoxin <b>${esc(r.eu)}</b> EU/mL</span>${resChip(st.eu)}`:''}</div></li>`;}).join('')}</ul>`:'<p class="empty">ยังไม่มีผล S7 ของเครื่องนี้</p>'}
+  h+=`<h3>ผลเพาะเชื้อและ Endotoxin ของน้ำยาไตเทียม</h3>${csEquipBlock('m',hm.no)}
   <div class="actions"><button type="button" class="btn" data-sel="point:S7">ไปที่จุด S7</button><button type="button" class="btn" data-sel="comp:hd">จุดจ่ายน้ำทั้งหมด</button></div>
+  <h3>ข้อมูลเครื่อง</h3>${srBlock('hd',String(hm.no),s.m)}
   <p class="small src">แนวทางเวชปฏิบัติการฟอกเลือดด้วยเครื่องไตเทียม พ.ศ. 2565 ของสมาคมโรคไตแห่งประเทศไทย ให้ใช้เครื่องเฉพาะสำหรับผู้ป่วย HBV และอบฆ่าเชื้อเครื่องทันทีหลังใช้กับผู้ป่วย HBV และ HCV ทุกครั้ง แนวทางไม่ได้กำหนดสีสัญลักษณ์ สีวงกลมในผังนี้เป็นสีที่หน่วยกำหนด</p>`;
   return h;
 }
 function panelPorto(id){
   const p=portoOf(id);if(!p)return panelOverview();const s=roState(id),ht=HEALTH_TXT[s.h];
-  let h=`${backBtn()}<div class="kicker">${chip('',p.size==='large'?'เครื่องใหญ่':'เครื่องเล็ก')}${s.m?chip(ht[0],ht[1]):''}</div><h2>${esc(p.name)}</h2><p>จอดเรียงชิดผนังห้องเทสารคัดหลั่ง ฝั่งโถงหน้าห้องระบบน้ำ เป็นเครื่องผลิตน้ำ RO แบบเข็นไปใช้ข้างเตียงผู้ป่วยนอกห้องไตเทียม</p>`;
-  return h+`<div class="actions"><button type="button" class="btn primary" data-act="showroom" data-k="porto" data-id="${id}">ดูและบันทึกข้อมูลเครื่อง</button></div>`+srBlock('ro',id,s.m);
+  let h=`${backBtn()}<div class="kicker">${chip('',p.size==='large'?'เครื่องใหญ่':'เครื่องเล็ก')}${s.m||s.test?chip(ht[0],ht[1]):''}</div><h2>${esc(p.name)}</h2><p>จอดเรียงชิดผนังห้องเทสารคัดหลั่ง ฝั่งโถงหน้าห้องระบบน้ำ เป็นเครื่องผลิตน้ำ RO แบบเข็นไปใช้ข้างเตียงผู้ป่วยนอกห้องไตเทียม</p>`;
+  return h+`<div class="actions"><button type="button" class="btn primary" data-act="showroom" data-k="porto" data-id="${id}">ดูและบันทึกข้อมูลเครื่อง</button></div><h3>ผลเพาะเชื้อและ Endotoxin ของน้ำ RO</h3>${csEquipBlock('p',id)}<h3>ข้อมูลเครื่อง</h3>`+srBlock('ro',id,s.m);
 }
 function thText(p){const t=thresholds()[p.cat];if(!t)return '';return `เพาะเชื้อ ต่ำกว่า ${t.cfuMax} CFU/mL (เฝ้าระวังตั้งแต่ ${t.cfuAction}) · Endotoxin ต่ำกว่า ${t.euMax} EU/mL (เฝ้าระวังตั้งแต่ ${t.euAction})`;}
 function panelPoint(p){
-  const i=pointInfo(p);
+  const i=pointInfo(p),lw=r=>r&&resultWhere(r)?' · '+esc(resultWhere(r)):'';
   let h=`${backBtn()}<div class="kicker">${chip(CAT[p.cat].cls,CAT[p.cat].label)}${i.worst?resChip(i.worst):''}</div><h2>${p.id} · ${esc(p.name)}</h2><p>${esc(p.where)}</p>`;
   if(p.note)h+=`<div class="callout">${esc(p.note)}</div>`;else h+=`<p class="small">เกณฑ์: ${esc(thText(p))}</p>`;
-  h+=`<dl class="facts"><dt>เพาะเชื้อล่าสุด</dt><dd>${i.lastCfu?esc(i.lastCfu.cfu)+' CFU/mL · '+thDate(i.lastCfu.date)+' '+resChip(i.cfuSt):'ยังไม่มีผล'}</dd><dt>Endotoxin ล่าสุด</dt><dd>${i.lastEu?esc(i.lastEu.eu)+' EU/mL · '+thDate(i.lastEu.date)+' '+resChip(i.euSt):'ยังไม่มีผล'}</dd>${p.cat!=='feed'?`<dt>รอบตรวจถัดไป</dt><dd>${dueChip(i.cfuDue,'เพาะเชื้อ')} ${dueChip(i.euDue,'Endotoxin')}</dd>`:''}</dl>`;
-  h+=`<div class="actions"><button type="button" class="btn primary" data-act="result">บันทึกผลตรวจ ${p.id}</button></div>`;
+  h+=`<dl class="facts"><dt>เพาะเชื้อล่าสุด</dt><dd>${i.lastCfu?esc(i.lastCfu.cfu)+' CFU/mL · '+thDate(i.lastCfu.date)+lw(i.lastCfu)+' '+resChip(i.cfuSt):'ยังไม่มีผล'}</dd><dt>Endotoxin ล่าสุด</dt><dd>${i.lastEu?esc(i.lastEu.eu)+' EU/mL · '+thDate(i.lastEu.date)+lw(i.lastEu)+' '+resChip(i.euSt):'ยังไม่มีผล'}</dd>${p.cat!=='feed'&&(i.cfuDue||i.euDue)?`<dt>${i.cs?'ตามแผนตรวจ':'รอบตรวจถัดไป'}</dt><dd>${dueChip(i.cfuDue,'เพาะเชื้อ')} ${dueChip(i.euDue,'Endotoxin')}</dd>`:''}</dl>`;
+  if(i.cs&&i.worstRec&&(i.worst==='fail'||i.worst==='watch'))h+=`<div class="callout warn">ผลล่าสุดของ <b>${esc(resultWhere(i.worstRec)||p.name)}</b> (${thDate(i.worstRec.date)}) ${esc(RES_LABEL[i.worst])}</div>`;
+  h+=`<div class="actions">${csOpenBtn('บันทึกผล '+p.id+' ในแอปผล C/S')}</div>`;
   const comp0=p.comp&&comp(p.comp);if(comp0)h+=`<p class="small">อุปกรณ์ที่อยู่ใกล้จุดนี้: <button type="button" class="linkbtn" data-sel="comp:${comp0.id}">${esc(comp0.name)}</button></p>`;
-  h+=`<h3>ประวัติผลตรวจ</h3>`;
-  if(!i.rs.length)return h+'<p class="empty">ยังไม่มีผลตรวจของจุดนี้</p>';
-  const byYear={};i.rs.forEach(r=>{const y=beYear(r.date)||'ไม่ระบุปี';(byYear[y]=byYear[y]||[]).push(r);});
-  Object.keys(byYear).sort((a,b)=>b-a).forEach(y=>{h+=`<div class="yearhead">พ.ศ. ${y}</div><ul class="hist">${byYear[y].map(r=>{const st=resultStatus(r);return `<li><div class="row1"><b>${thDate(r.date)}${resultWhere(r)?' · '+esc(resultWhere(r)):''}</b><span class="small">${esc(r.lab||'')}</span></div>
-    <div class="vals">${hasVal(r.cfu)?`<span>เพาะเชื้อ <b>${esc(r.cfu)}</b> CFU/mL</span>${resChip(st.cfu)}`:''}${hasVal(r.eu)?`<span>Endotoxin <b>${esc(r.eu)}</b> EU/mL</span>${resChip(st.eu)}`:''}</div>
-    ${r.organism?`<div class="small">เชื้อที่พบ: ${esc(r.organism)}</div>`:''}${r.note?`<div class="small">${esc(r.note)}</div>`:''}
-    <div class="ops">${r.file?`<a href="${esc(fileUrl(r.file))}" target="_blank" rel="noopener"${/^data:/.test(r.file)?` download="${esc(r.fileName||'ผลตรวจ')}"`:''}>เปิดไฟล์ผล</a>`:''}<button type="button" class="linkbtn" data-edit="${r.id}">แก้ไข</button><button type="button" class="linkbtn" style="color:var(--bad)" data-del="${r.id}">ลบ</button></div></li>`;}).join('')}</ul>`;});
-  return h;
+  h+=csNotice();
+  if(i.cs&&i.per.length)h+=`<h3>แผนตรวจปีงบประมาณ ${curFY()}</h3>`+csPlanGrid(i.per.map(x=>({L:x.L})));
+  else if(i.cs&&p.cat!=='feed')h+='<p class="small">ไม่พบจุดนี้ในแผนรายปีของแอปผล C/S</p>';
+  if(p.id==='S2'&&cs.state==='ok'){const A=csLocsWhere(m=>m.kind==='aami')[0];
+    if(A)h+=`<h3>AAMI (Pre loop)</h3><div class="chips">${planChip(csAgg([csPlanOf(A,'any')]))}</div>${csPlanGrid([{L:A,label:'AAMI'}])}${csEvents('aami',4)}`;}
+  return h+'<h3>ประวัติผลตรวจ</h3>'+csHist(i.rs,{where:true,limit:24});
 }
 function bindPanel(P){
   P.querySelectorAll('[data-sel]').forEach(b=>b.onclick=()=>{const [k,id]=b.dataset.sel.split(':');select(k,id,true);});
@@ -2400,12 +2681,14 @@ function openSettings(){
   <h3>การเชื่อมต่อ Google Sheet</h3>
   <div class="field"><label for="sUrl">ลิงก์ Web App ของ Apps Script (ลงท้าย /exec)</label><input id="sUrl" value="${esc(apiUrl)}" placeholder="https://script.google.com/macros/s/…/exec"><span class="help">เว้นว่างเพื่อใช้โหมดทดลอง ข้อมูลจะอยู่ในเบราว์เซอร์นี้เท่านั้น</span></div>
   <div class="field"><label for="sDaily">ลิงก์ Apps Script ของ Dashboard ระบบน้ำ RO (แบบบันทึกประจำวัน)</label><input id="sDaily" value="${esc(setting('dailyUrl','')||'')}" placeholder="${esc(DAILY_URL_DEFAULT)}"><span class="help">ใช้แสดงค่าบนตู้ไฟ ORP เกจแรงดัน และนาฬิกาหัวถัง เว้นว่าง = ใช้ลิงก์ของแดชบอร์ดเดิม</span></div>
+  <div class="field"><label for="sCS">ลิงก์ Apps Script ของแอปผล C/S (ผลเพาะเชื้อ Endotoxin แผนตรวจรายปี และ PM)</label><input id="sCS" value="${esc(setting('csUrl','')||'')}" placeholder="${esc(CS_URL_DEFAULT)}"><span class="help">เว้นว่าง = ใช้ลิงก์แอปผล C/S ของหน่วย ผลตรวจใหม่ให้บันทึกที่แอปนี้</span></div>
   <div class="field"><label for="sShow">ลิงก์ Apps Script ของระบบเครื่องไตเทียม และระบบน้ำเคลื่อนที่</label><input id="sShow" value="${esc(setting('showroomUrl','')||'')}" placeholder="${esc(SHOWROOM_URL_DEFAULT)}"><span class="help">ใช้แสดงรายละเอียดเมื่อกดเครื่องไตเทียมและ RO เคลื่อนที่ เว้นว่าง = ใช้ลิงก์ของระบบเดิม</span></div>
   <h3>เกณฑ์ผลตรวจ</h3>
   <table><thead><tr><th></th><th>เพาะเชื้อ เฝ้าระวัง</th><th>เพาะเชื้อ เกินเกณฑ์</th><th>Endotoxin เฝ้าระวัง</th><th>Endotoxin เกินเกณฑ์</th></tr></thead><tbody>
   ${['water','dialysate'].map(k=>`<tr><td>${k==='water'?'Dialysis water':'Dialysis fluid'}</td><td>${num('t_'+k+'_ca',T[k].cfuAction,1)}</td><td>${num('t_'+k+'_cm',T[k].cfuMax,1)}</td><td>${num('t_'+k+'_ea',T[k].euAction,.001)}</td><td>${num('t_'+k+'_em',T[k].euMax,.001)}</td></tr>`).join('')}</tbody></table>
   <p class="small">หน่วย CFU/mL และ EU/mL · ค่าตั้งต้นเหมือนระบบเครื่องไตเทียม และระบบน้ำเคลื่อนที่ <button type="button" class="linkbtn" id="sResetTh">ใช้ค่าตั้งต้น</button></p>
   <h3>รอบเก็บตัวอย่างน้ำตรวจ</h3>
+  <p class="small">ใช้เมื่อดึงแผนตรวจรายปีจากแอปผล C/S ไม่ได้ ปกติผังจะเตือนตามแผนในแอปผล C/S</p>
   <div class="grid2"><div class="field"><label for="sCfuM">เพาะเชื้อ ทุกกี่เดือน</label>${num('sCfuM',S.cfuMonths,1)}</div><div class="field"><label for="sEuM">Endotoxin ทุกกี่เดือน</label>${num('sEuM',S.euMonths,1)}</div></div>
   <h3>รอบเปลี่ยนไส้กรองและอุปกรณ์</h3>
   <table><thead><tr><th>อุปกรณ์</th><th>รอบเปลี่ยน</th><th>เดือน</th></tr></thead><tbody>
@@ -2415,7 +2698,7 @@ function openSettings(){
   const p=openModal('ตั้งค่า',body,{submitLabel:'บันทึกการตั้งค่า',onSubmit:async()=>{
     const url=$('#sUrl').value.trim();
     if(url&&url!==apiUrl&&!/^https:\/\/script\.google(usercontent)?\.com\/.+/.test(url))throw new Error('ลิงก์ต้องเป็นลิงก์ Web App ของ Apps Script');
-    const lv={dailyUrl:$('#sDaily').value.trim(),showroomUrl:$('#sShow').value.trim()};
+    const lv={dailyUrl:$('#sDaily').value.trim(),showroomUrl:$('#sShow').value.trim(),csUrl:$('#sCS').value.trim()};
     Object.values(lv).forEach(u=>{if(u&&!/^https:\/\/script\.google(usercontent)?\.com\/.+/.test(u))throw new Error('ลิงก์ต้องเป็นลิงก์ Web App ของ Apps Script');});
     const gv=id=>Number($('#'+id).value);
     const th={};for(const k of ['water','dialysate']){const o={cfuAction:gv('t_'+k+'_ca'),cfuMax:gv('t_'+k+'_cm'),euAction:gv('t_'+k+'_ea'),euMax:gv('t_'+k+'_em')};

@@ -752,7 +752,7 @@ const STATION_NAME={1:'เตียง 1',2:'เตียง 2',3:'เตีย�
 const hdOf=no=>HD_MACHINES.find(m=>m.no===Number(no));
 const hdAtStation=n=>HD_MACHINES.find(m=>m.station===Number(n));
 /* RO เคลื่อนที่ตามตารางเครื่องในแอปผล C/S: UNO 1, UNO 2 (เครื่องเล็ก) และ RO social (เครื่องใหญ่) */
-const PORTO=[{id:'ros1',name:'UNO 1 · RO เคลื่อนที่เครื่องเล็ก',short:'UNO 1',size:'small',re:/uno\s*-?\s*1(?![0-9])/i},{id:'ros2',name:'UNO 2 · RO เคลื่อนที่เครื่องเล็ก',short:'UNO 2',size:'small',re:/uno\s*-?\s*2(?![0-9])/i},{id:'rol',name:'RO social · RO เคลื่อนที่เครื่องใหญ่',short:'RO social',size:'large',re:/social/i}];
+const PORTO=[{id:'ros1',name:'UNO 1 · RO เคลื่อนที่เครื่องเล็ก',short:'UNO 1',size:'small',re:/uno\s*-?\s*1(?![0-9])/i},{id:'ros2',name:'UNO 2 · RO เคลื่อนที่เครื่องเล็ก',short:'UNO 2',size:'small',re:/uno\s*-?\s*2(?![0-9])/i},{id:'rol',name:'RO social · RO เคลื่อนที่เครื่องใหญ่',short:'RO social',size:'large',re:/soc(ia|ai)l/i}];
 const portoOf=id=>PORTO.find(p=>p.id===id);
 
 /* ---------- ค่าในแบบบันทึกประจำวัน (ชื่อหัวคอลัมน์จับคู่แบบเดียวกับหน้า Dashboard) ----------
@@ -992,7 +992,7 @@ function csMapLoc(loc){
   if(/return|\bs6\b|จุดสุดท้าย/i.test(s))return {kind:'test',point:'S6'};
   if(/uno\s*1/i.test(s))return {kind:'test',porto:'ros1'};
   if(/uno\s*2/i.test(s))return {kind:'test',porto:'ros2'};
-  if(/social/i.test(s))return {kind:'test',porto:'rol'};
+  if(/soc(ia|ai)l/i.test(s))return {kind:'test',porto:'rol'};   // รวมชื่อเดิมที่สะกด Socail
   return null;
 }
 /* ชื่อสั้นของจุด: grid = ใช้ในตารางแผน (สั้นที่สุด) */

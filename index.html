@@ -260,7 +260,6 @@ dialog#roDlg{max-width:min(1180px,96vw)}
 .views button.vequip[aria-pressed="true"]{color:#fff}
 .equip-pane{position:absolute;left:0;right:0;bottom:0;top:54px;z-index:6;background:#fff;border-top:1px solid var(--line)}
 .equip-pane[hidden]{display:none}
-.equip-pane iframe{display:block;width:100%;height:100%;border:0}
 .stage.equip-on{height:min(86vh,980px)}
 .stage.equip-on .labels,.stage.equip-on .hint,.stage.equip-on canvas{visibility:hidden}
 .stage-wrap:has(.stage.equip-on) .legend,.stage-wrap:has(.stage.equip-on) .cap{display:none}
@@ -297,7 +296,8 @@ a.btn.primary{color:#fff}
 .mplan li.ok>* span{color:#16774f}
 /* แถบเครื่องไตเทียม และระบบน้ำเคลื่อนที่: ซ่อนส่วนของระบบน้ำ RO */
 body.equip-mode .stage-bar,body.equip-mode #statusline,body.equip-mode .tables,body.equip-mode .foot{display:none}
-body.equip-mode .panel{max-height:min(86vh,980px)}
+body.equip-mode .panel{display:none}
+body.equip-mode .work{grid-template-columns:1fr}
 .eqlist{display:grid;gap:8px;margin:6px 0 12px}
 .eqc{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
 .eqc-b{display:block;width:100%;text-align:left;font:inherit;color:var(--ink);background:none;border:0;padding:10px 12px 8px;cursor:pointer}
@@ -324,6 +324,81 @@ body.equip-mode .panel{max-height:min(86vh,980px)}
 .rb-n{margin-top:4px}
 .rb-f{font-size:13px;font-weight:600;margin-top:4px}
 @media (max-width:420px){.rboxes{grid-template-columns:1fr}}
+
+/* ===== หน้ารายการเครื่องไตเทียม และระบบน้ำเคลื่อนที่ ===== */
+.catalog{position:absolute;inset:0;overflow:auto;padding:22px 24px 30px;background:linear-gradient(180deg,#f3f7f9 0,#eef3f6 100%);-webkit-overflow-scrolling:touch}
+.ico{display:inline-flex;width:1.15em;height:1.15em;flex:none;vertical-align:-.2em}
+.ico svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.cat-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 24px;margin-bottom:18px}
+.cat-title h2{margin:0;font:600 26px/1.25 Kanit,"IBM Plex Sans Thai",sans-serif;color:var(--deep)}
+.cat-title p{margin:4px 0 0;color:var(--muted);font-size:14px;max-width:70ch}
+.cat-sum{display:flex;flex-wrap:wrap;gap:8px}
+.sum{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:14px;color:var(--ink)}
+.sum b{font:600 18px/1 Kanit,sans-serif;color:var(--deep)}
+.sum .ico{color:var(--ro-ink)}
+.sum.s-bad{background:var(--bad-bg);border-color:#f3b9b2;color:var(--bad)}.sum.s-bad b,.sum.s-bad .ico{color:var(--bad)}
+.sum.s-watch{background:var(--watch-bg);border-color:#efd09a;color:#9a5b05}.sum.s-watch b,.sum.s-watch .ico{color:#9a5b05}
+.cat-sec{margin-top:18px}
+.cat-sec h3{display:flex;align-items:center;gap:8px;margin:0 0 10px;font:600 18px/1.3 Kanit,"IBM Plex Sans Thai",sans-serif;color:var(--deep)}
+.cat-sec h3 .ico{color:var(--ro-ink)}
+.cnt{font:500 13px/1 "IBM Plex Sans Thai",sans-serif;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.mc{position:relative;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(14,42,59,.06);transition:box-shadow .15s,transform .15s}
+.mc:hover{box-shadow:0 8px 22px rgba(14,42,59,.12);transform:translateY(-2px)}
+.mc-hit{position:absolute;inset:0;z-index:1;background:none;border:0;cursor:pointer;border-radius:16px}
+.mc-hit:focus-visible{outline:3px solid var(--ro);outline-offset:-3px}
+.mc-top{position:relative;height:168px;display:flex;align-items:flex-end;justify-content:center;background:radial-gradient(120% 90% at 50% 100%,color-mix(in srgb,var(--tone) 22%,#fff) 0,color-mix(in srgb,var(--tone) 7%,#f6f9fb) 60%,#f6f9fb 100%);border-bottom:3px solid var(--tone)}
+.mc-img{height:100%;width:auto;max-width:100%;object-fit:contain;display:block}
+.mc-ph{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--tone);font-size:64px;opacity:.55}
+.mc-type{position:absolute;left:10px;top:10px;background:var(--tone);color:#fff;font:600 13.5px/1 Kanit,"IBM Plex Sans Thai",sans-serif;padding:6px 11px;border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,.15);letter-spacing:.2px}
+.mc-st{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:4px 10px 4px 8px;border-radius:999px;background:#eef2f5;color:#51697a;width:max-content}
+.mc-top .mc-st{position:absolute;right:10px;top:10px}
+.mc-st.st-ok{background:#e3f5ec;color:#16774f}.mc-st.st-watch{background:var(--watch-bg);color:#9a5b05}.mc-st.st-bad{background:var(--bad-bg);color:var(--bad)}
+.mc-body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:9px}
+.mc-name{display:flex;flex-direction:column;gap:1px}
+.mc-name b{font:600 21px/1.2 Kanit,"IBM Plex Sans Thai",sans-serif;color:var(--deep)}
+.mc-name span{font-size:13px;color:var(--muted)}
+.mc-name .mc-sn{font-size:12px;color:#7b8f9d;letter-spacing:.3px}
+.mr{display:flex;flex-direction:column;gap:2px;padding:9px 11px;border-radius:12px;background:var(--soft);border:1px solid #e4ecf1}
+.mr-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mr-l{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink)}
+.mr-l .ico{color:var(--ro-ink)}
+.mr-v{display:flex;align-items:baseline;gap:5px}.mr-v b{font:600 24px/1.15 Kanit,sans-serif;color:var(--deep)}.mr-v small{font-size:12px;color:var(--muted)}
+.mr-none{font-size:14px;color:var(--muted);padding:3px 0}
+.mr-d{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 10px;font-size:12.5px;color:var(--muted)}
+.mr-f{position:relative;z-index:2;display:inline-flex;align-items:center;gap:4px;font-weight:600;color:var(--info);text-decoration:none;border:1px solid #c9dcf2;background:#fff;border-radius:999px;padding:3px 10px}
+.mr-f:hover{background:#eef5fd}
+.mr-nofile{font-size:11.5px}
+.mr-n{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted);border-top:1px dashed #d8e3ea;padding-top:6px;margin-top:4px}
+.mr-n .ico{color:#8aa0ae}
+.mf{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;color:var(--muted);padding:2px 2px 0}
+.mf .ico{color:var(--ro-ink);margin-top:1px}
+.mf.nx-bad,.mf.nx-bad .ico{color:var(--bad);font-weight:600}.mf.nx-watch,.mf.nx-watch .ico{color:#9a5b05;font-weight:600}
+.mc-empty{margin:0;font-size:13px;color:var(--muted)}
+.cat-foot{margin:22px 0 0;font-size:12.5px;color:var(--muted);line-height:2}
+.tp{display:inline-block;background:var(--tone);color:#fff;font-weight:600;border-radius:999px;padding:1px 9px;font-size:12px}
+/* หน้ารายเครื่อง */
+.cat-back{margin-bottom:14px}
+.cd{display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px;align-items:start}
+.cd-side{position:sticky;top:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.cd-imgbox{position:relative;height:250px;display:flex;align-items:flex-end;justify-content:center;border-radius:12px;background:radial-gradient(120% 90% at 50% 100%,color-mix(in srgb,var(--tone) 24%,#fff) 0,color-mix(in srgb,var(--tone) 8%,#f6f9fb) 60%,#f6f9fb 100%);border-bottom:3px solid var(--tone)}
+.cd-pic{height:100%;width:auto;max-width:100%;object-fit:contain}
+.cd-side h2{margin:4px 0 0;font:600 22px/1.25 Kanit,"IBM Plex Sans Thai",sans-serif;color:var(--deep)}
+.cd-side p{margin:0}
+.cd-desc{color:var(--muted)}
+.cd-act{display:flex;flex-direction:column;gap:8px;margin-top:6px}.cd-act .btn{justify-content:center;display:inline-flex;align-items:center;gap:6px}
+.cd-main{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:6px 18px 18px;min-width:0}
+.cd-main h3{display:flex;align-items:center;gap:8px;font:600 17px/1.3 Kanit,"IBM Plex Sans Thai",sans-serif;color:var(--deep);margin:16px 0 8px}
+.cd-main h3 .ico{color:var(--ro-ink)}
+/* หน้าระบบเครื่องในกรอบ (โมเดล 3 มิติ และแก้ไขข้อมูลเครื่อง) */
+.eq-frame{position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;z-index:2}
+.eq-frame[hidden]{display:none}
+.eq-fbar{display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--soft);font-size:14px;flex-wrap:wrap}
+.eq-fbar span{font-weight:600;color:var(--ink)}
+.eq-fbar a{margin-left:auto;font-size:13px}
+.eq-frame iframe{flex:1;width:100%;border:0;display:block}
+@media (max-width:900px){.cd{grid-template-columns:1fr}.cd-side{position:static}}
+@media (max-width:640px){.catalog{padding:14px 12px 24px}.cat-title h2{font-size:22px}.cat-grid{grid-template-columns:1fr}.mc-top{height:150px}.cd-main{padding:4px 12px 14px}}
 
 </style>
 </head>
@@ -365,7 +440,7 @@ body.equip-mode .panel{max-height:min(86vh,980px)}
           <button type="button" data-view="top" aria-pressed="false">มุมบน</button>
           <button type="button" data-view="equip" aria-pressed="false" class="vequip">เครื่องไตเทียม และระบบน้ำเคลื่อนที่</button>
         </div>
-        <div class="equip-pane" id="equipPane" hidden><iframe id="eqFrame" title="เครื่องไตเทียม และระบบน้ำเคลื่อนที่"></iframe></div>
+        <div class="equip-pane" id="equipPane" hidden><div class="catalog" id="catalog"></div><div class="eq-frame" id="eqFrameWrap" hidden><div class="eq-fbar"><button type="button" class="btn small" id="eqBack">← กลับหน้าเครื่อง</button><span id="eqFTitle"></span><a id="eqFOpen" href="#" target="_blank" rel="noopener">เปิดในแท็บใหม่</a></div><iframe id="eqFrame" title="เครื่องไตเทียม และระบบน้ำเคลื่อนที่"></iframe></div></div>
         <p class="hint">ลากเพื่อหมุน · ซูมด้วยลูกกลิ้งหรือบีบนิ้ว · คลิกขวาลากหรือใช้สองนิ้วเพื่อเลื่อน</p>
         <div class="nogl" id="nogl" hidden><p>เบราว์เซอร์นี้แสดงภาพ 3 มิติไม่ได้ ยังดูรายการอุปกรณ์ จุดเก็บตัวอย่าง และบันทึกข้อมูลได้จากแผงด้านข้างและตารางด้านล่าง</p></div>
       </div>
@@ -742,10 +817,10 @@ function showroomUrl(){return String(setting('showroomUrl','')||SHOWROOM_URL_DEF
    แนวทางเวชปฏิบัติการฟอกเลือดฯ 2565 ของสมาคมโรคไตแห่งประเทศไทย ให้ใช้เครื่องเฉพาะสำหรับผู้ป่วย HBV และ HCV
    แต่ไม่ได้กำหนดสีสัญลักษณ์ สีด้านล่างเป็นสีที่หน่วยปรับได้ */
 const BADGE={
-  N:{text:'N',bg:'#1f9d6b',desc:'เครื่องสำหรับผู้ป่วยทั่วไปที่ผลไวรัสตับอักเสบบีและซีเป็นลบ'},
-  Acute:{text:'Acute',bg:'#2f6fd0',desc:'เครื่องสำหรับการฟอกเลือดแบบเฉียบพลัน (Acute)'},
-  C:{text:'C',bg:'#e08a1e',desc:'เครื่องเฉพาะผู้ป่วยไวรัสตับอักเสบซี (anti-HCV บวก) อบฆ่าเชื้อเครื่องทันทีหลังใช้ทุกครั้ง ไม่ใช้สายส่งเลือดซ้ำ'},
-  B:{text:'B',bg:'#d9483b',desc:'เครื่องเฉพาะผู้ป่วยไวรัสตับอักเสบบี (HBsAg บวก) แยกพื้นที่ อุปกรณ์ และอบฆ่าเชื้อเครื่องทันทีหลังใช้ทุกครั้ง'}
+  N:{text:'N',label:'Normal',bg:'#1f9d6b',desc:'เครื่องสำหรับผู้ป่วยทั่วไปที่ผลไวรัสตับอักเสบบีและซีเป็นลบ'},
+  Acute:{text:'Acute',label:'Acute',bg:'#e8811f',desc:'เครื่องสำหรับการฟอกเลือดแบบเฉียบพลัน (Acute)'},
+  C:{text:'C',label:'Hep C',bg:'#d9483b',desc:'เครื่องเฉพาะผู้ป่วยไวรัสตับอักเสบซี (anti-HCV บวก) อบฆ่าเชื้อเครื่องทันทีหลังใช้ทุกครั้ง ไม่ใช้สายส่งเลือดซ้ำ'},
+  B:{text:'B',label:'Hep B',bg:'#b8281f',desc:'เครื่องเฉพาะผู้ป่วยไวรัสตับอักเสบบี (HBsAg บวก) แยกพื้นที่ อุปกรณ์ และอบฆ่าเชื้อเครื่องทันทีหลังใช้ทุกครั้ง'}
 };
 const HD_MACHINES=[{no:4,station:1,badge:'N'},{no:5,station:2,badge:'N'},{no:6,station:3,badge:'Acute'},{no:7,station:4,badge:'C'},{no:8,station:5,badge:'B'}];
 const STATION_NAME={1:'เตียง 1',2:'เตียง 2',3:'เตียง 3',4:'เตียง 4',5:'เก้าอี้ 5',6:'เก้าอี้ 6',7:'ICU ห้อง 5',8:'ICU ห้อง 4'};
@@ -2265,6 +2340,37 @@ function tickLive(dt,t){
 }
 const _v2=new THREE.Vector3();
 
+/* ---------- ภาพโมเดลตัวอย่างสำหรับการ์ดเครื่อง: วาดโมเดลชุดเดียวกับในผังแยกทีละเครื่อง ---------- */
+const THUMB={};let thumbSig='';
+function buildThumbs(){
+  if(!has3D||typeof THREE==='undefined')return false;
+  const sig=[cs.state,cs.recs.length,showroom.state,showroom.machines.length,showroom.filters.length,setting('hdmap',''),setting('romap','')].map(v=>typeof v==='object'?JSON.stringify(v):v).join('|');
+  if(sig===thumbSig)return false;
+  let r;try{r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});}catch(e){return false;}
+  const W=440,H=360;r.setPixelRatio(1);r.setSize(W,H,false);r.outputColorSpace=THREE.SRGBColorSpace;r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.02;r.setClearColor(0x000000,0);
+  const sc=new THREE.Scene(),env=studioEnv(r);if(env)sc.environment=env;
+  sc.add(new THREE.HemisphereLight(0xffffff,0xc5d0d8,.55));const dl=new THREE.DirectionalLight(0xffffff,1.15);dl.position.set(2.5,5,4);sc.add(dl);
+  const holder=new THREE.Group();holder.scale.x=-1;sc.add(holder);const cam=new THREE.PerspectiveCamera(30,W/H,.02,60);
+  const keep={plant:S3D.plant,pick:S3D.pickables.length,mt:MTAGS.length,rt:RTAGS.length,mach:{...OBJ3D.machine},porto:{...OBJ3D.porto}};
+  const shot=key=>{holder.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(holder),c=box.getCenter(new THREE.Vector3()),sz=box.getSize(new THREE.Vector3());
+    const fit=Math.max(sz.y,sz.x*H/W*1.1)/2/Math.tan(cam.fov*Math.PI/360)*1.18,dir=new THREE.Vector3(.5,.3,1).normalize();
+    cam.position.copy(c).addScaledVector(dir,fit);cam.lookAt(c);cam.updateProjectionMatrix();r.render(sc,cam);THUMB[key]=r.domElement.toDataURL('image/png');
+    holder.traverse(n=>{if(n.isMesh&&n.geometry)n.geometry.dispose();});holder.clear();};
+  S3D.plant=holder;
+  try{
+    HD_MACHINES.forEach(hm=>{hdUnit(hm,0,0,0);paintMachine(OBJ3D.machine[hm.no]);shot('machine:'+hm.no);});
+    PORTO.forEach(p=>{roUnit(p,0,0,0);paintPorto(OBJ3D.porto[p.id]);shot('porto:'+p.id);});
+    thumbSig=sig;
+  }catch(e){console.error(e);}
+  finally{
+    S3D.plant=keep.plant;S3D.pickables.length=keep.pick;MTAGS.length=keep.mt;RTAGS.length=keep.rt;
+    Object.keys(OBJ3D.machine).forEach(k=>{if(keep.mach[k])OBJ3D.machine[k]=keep.mach[k];else delete OBJ3D.machine[k];});
+    Object.keys(OBJ3D.porto).forEach(k=>{if(keep.porto[k])OBJ3D.porto[k]=keep.porto[k];else delete OBJ3D.porto[k];});
+    if(env)env.dispose();r.dispose();r.forceContextLoss();
+  }
+  return true;
+}
+
 /* =====================================================================
    ภาพเคลื่อนไหวอธิบายหลัก Osmosis และ Reverse osmosis
    ===================================================================== */
@@ -2369,7 +2475,7 @@ function boot(){
   $('#capPlay').onclick=()=>{if(!player)return;const n=stepsOf(player).length;if(player.playing){player.playing=false;clearTimeout(player.timer);renderCaption();}else if(player.i>=n-1){player.i=0;player.playing=true;showStep();}else{player.playing=true;resume();}};
   $('#capClose').onclick=()=>stopPlayer();
   document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
-  $('#btnSettings').onclick=openSettings;$('#btnRO').onclick=openRO;
+  $('#btnSettings').onclick=openSettings;$('#btnRO').onclick=openRO;$('#eqBack').onclick=()=>{$('#eqFrameWrap').hidden=true;};
   document.querySelectorAll('#views button').forEach(b=>b.onclick=()=>{if(b.dataset.view==='equip'){showEquip(null);return;}hideEquip();if(!has3D)return;camView(b.dataset.view);markView(b.dataset.view);});
   let lab=true;try{lab=localStorage.getItem(LABEL_KEY)!=='0';}catch{}
   const lb=$('#btnLabels');lb.setAttribute('aria-pressed',String(lab));
@@ -2395,7 +2501,7 @@ async function loadLive(){
   render();if(has3D)applyLive3D();
 }
 function render(){
-  renderStatus();renderPanel();renderTables();
+  renderStatus();renderPanel();renderTables();if(equipOn)renderCatalog();
   if(has3D){setStatus3D();S3D.dataVer++;S3D.labelSig='';}
 }
 function markView(v){document.querySelectorAll('#views button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===v)));
@@ -2529,23 +2635,22 @@ function panelComp(c){
   return h;
 }
 /* ---------- แถบ "เครื่องไตเทียม และระบบน้ำเคลื่อนที่": เปิดหน้าเว็บระบบเครื่อง (ลิงก์ GitHub ของหน่วย) แทนภาพ 3 มิติในกรอบเดียวกัน ---------- */
-const EQUIP_PAGE='https://eyebidi-aom.github.io/3dhemodialysis/';let equipOn=false;
-function showEquip(hash){
-  const f=$('#eqFrame'),url=EQUIP_PAGE+(hash||'#/');if(f.getAttribute('src')!==url)f.setAttribute('src',url);
-  const was=equipOn;$('#equipPane').hidden=false;$('#stage').classList.add('equip-on');document.body.classList.add('equip-mode');equipOn=true;if(has3D)S3D.paused=true;markView('equip');
+const EQUIP_PAGE='https://eyebidi-aom.github.io/3dhemodialysis/';let equipOn=false,catView=null;
+/* view: null = ภาพรวมเครื่องทั้งหมด, {kind,id} = หน้ารายเครื่อง, undefined = คงหน้าเดิม */
+function showEquip(view){
+  const changed=view!==undefined&&JSON.stringify(view)!==JSON.stringify(catView);if(view!==undefined)catView=view;
+  const was=equipOn;$('#equipPane').hidden=false;$('#eqFrameWrap').hidden=true;$('#stage').classList.add('equip-on');document.body.classList.add('equip-mode');equipOn=true;if(has3D)S3D.paused=true;markView('equip');
+  renderCatalog();if(changed||!was)$('#catalog').scrollTop=0;
   if(!was)renderPanel();
 }
-/* เลือกเครื่องจากแผงข้างขณะอยู่ในแถบนี้: เปิดหน้าของเครื่องนั้นในกรอบด้วย */
-function equipGo(kind,id){const m=kind==='machine'?linkedHD(id):linkedRO(id);showEquip(m?'#/m/'+encodeURIComponent(m.id):'#/');}
+function equipGo(kind,id){showEquip({kind,id:String(id)});}
 function hideEquip(){
   if(!equipOn)return;equipOn=false;$('#equipPane').hidden=true;$('#stage').classList.remove('equip-on');document.body.classList.remove('equip-mode');if(has3D){S3D.paused=false;S3D.labelSig='';}
   loadShowroom().then(()=>{if(has3D)applyLive3D();renderPanel();});
 }
-/* กดเครื่องในผัง: เปิดหน้าข้อมูลเครื่องนั้น ถ้ายังไม่ได้จับคู่ เปิดรายการเครื่องทั้งหมด */
+/* กดเครื่องในผังหรือปุ่มในแผงข้าง: เปิดหน้ารายเครื่องในแถบเครื่องไตเทียม และระบบน้ำเคลื่อนที่ */
 function openEquip(kind,id){
-  const hd=kind==='machine',m=hd?linkedHD(id):linkedRO(id),title=hd?'เครื่องไตเทียม '+id:portoOf(id).short;
-  showEquip(m?'#/m/'+encodeURIComponent(m.id):'#/');
-  if(!m)toast(showroom.state==='ok'?title+' ยังไม่ได้จับคู่กับข้อมูลเครื่อง เลือกได้ในแผงด้านข้าง':'กำลังโหลดข้อมูลเครื่อง');
+  showEquip({kind,id:String(id)});
   if(innerWidth<=1100)$('#stage').scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'start'});
 }
 /* ---------- ค่าประจำวัน ค่าปกติ และคำแนะนำ ---------- */
@@ -2808,6 +2913,114 @@ function openSettings(){
 }
 
 document.addEventListener('DOMContentLoaded',boot);
+
+/* =====================================================================
+   แถบเครื่องไตเทียม และระบบน้ำเคลื่อนที่
+   หน้าภาพรวม: จำนวนเครื่องแต่ละกลุ่ม การ์ดเครื่องเรียง 4–8 พร้อมผล C/S Endotoxin ล่าสุด และฟิลเตอร์ครั้งต่อไป
+   หน้ารายเครื่อง: แสดงผลของเครื่องนั้นเครื่องเดียว
+   ===================================================================== */
+const ICON={
+  machine:'<svg viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="17" rx="2"/><rect x="8.5" y="5" width="7" height="4.5" rx="1"/><circle cx="10" cy="13.2" r="1.6"/><path d="M14 12.2h2M14 14.6h2M7.5 21.5h2M14.5 21.5h2"/></svg>',
+  water:'<svg viewBox="0 0 24 24"><path d="M12 3c3.6 4.6 6 8 6 11a6 6 0 0 1-12 0c0-3 2.4-6.4 6-11z"/><path d="M9.2 14.5a2.9 2.9 0 0 0 2.6 2.6"/></svg>',
+  bac:'<svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="6.5" ry="4.2" transform="rotate(-30 12 12)"/><path d="M5 6.5l1.8 1.6M17.2 15.9L19 17.5M4 13.5l2.3-.3M17.7 10.8l2.3-.3M8.5 19l.9-2.2M14.6 7.2l.9-2.2"/><circle cx="10.6" cy="12.4" r=".9" fill="currentColor" stroke="none"/><circle cx="13.6" cy="11.2" r=".9" fill="currentColor" stroke="none"/></svg>',
+  vial:'<svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v10.4l-3.7 5.9A1.8 1.8 0 0 0 7.8 22h8.4a1.8 1.8 0 0 0 1.5-2.7L14 13.4V3"/><path d="M7.8 17.5h8.4"/></svg>',
+  cal:'<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+  filter:'<svg viewBox="0 0 24 24"><rect x="8" y="4" width="8" height="16" rx="2"/><path d="M8 8h8M8 16h8M12 1.5V4M12 20v2.5"/></svg>',
+  file:'<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
+  ok:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.7 2.7L16.2 9.8"/></svg>',
+  warn:'<svg viewBox="0 0 24 24"><path d="M12 3.5l9 16H3z"/><path d="M12 10v4.3M12 17.2v.3"/></svg>',
+  bad:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.3v6.2M12 16.6v.4"/></svg>',
+  none:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>',
+  cube:'<svg viewBox="0 0 24 24"><path d="M12 2.5l8.5 4.8v9.4L12 21.5l-8.5-4.8V7.3z"/><path d="M3.5 7.3L12 12l8.5-4.7M12 12v9.5"/></svg>'
+};
+const ic=k=>`<i class="ico" aria-hidden="true">${ICON[k]}</i>`;
+const ST_ICON={ok:'ok',watch:'warn',bad:'bad',mute:'none'};
+
+function catState(kind,id){
+  const hd=kind==='machine',s=hd?hdState(id):roState(id),L=cs.state==='ok'?csLocFor(hd?'m':'p',id):null;
+  return {kind,id:String(id),hd,s,L,x:L?csLocInfo(L):null};
+}
+function catType(a){if(a.hd){const b=BADGE[hdOf(a.id).badge];return {label:b.label,bg:b.bg};}const p=portoOf(a.id);return {label:p.size==='large'?'เครื่องใหญ่':'เครื่องเล็ก',bg:'#0f8f88'};}
+function filterNext(m,f){
+  if(!m)return 'ฟิลเตอร์: ยังไม่มีข้อมูลเครื่องในระบบเครื่องไตเทียม';if(!f||f.state==='none')return 'ไม่มี Bacteria filter';
+  if(f.state==='nodata')return 'ยังไม่บันทึกการเปลี่ยนฟิลเตอร์';const d=v=>thDate(String(v).slice(0,10));
+  if(f.state==='nodue')return 'เปลี่ยนฟิลเตอร์ล่าสุด '+d(f.last.date);
+  return 'เปลี่ยนฟิลเตอร์ครั้งต่อไป '+d(f.due)+(f.state==='over'?' · เลยกำหนด '+(-f.days)+' วัน':' · อีก '+f.days+' วัน');
+}
+/* แถวผลตรวจในการ์ด: ค่า สถานะ วันที่ ลิงก์ไฟล์ผล และรอบเก็บถัดไป */
+function catRes(icon,lbl,r,v,unit,st,file,pl){
+  const n=planNext(pl);
+  return `<div class="mr"><div class="mr-h"><span class="mr-l">${ic(icon)}${lbl}</span>${r?resChip(st):''}</div>
+  <div class="mr-v">${r?`<b>${esc(v)}</b><small>${unit}</small>`:'<span class="mr-none">ยังไม่มีผล</span>'}</div>
+  ${r?`<div class="mr-d"><span>ตรวจ ${thDate(r.date)}</span>${file?`<a class="mr-f" href="${esc(file)}" target="_blank" rel="noopener">${ic('file')}ดูผล</a>`:'<span class="mr-nofile">ไม่มีไฟล์แนบ</span>'}</div>`:''}
+  <div class="mr-n">${ic('cal')}รอบถัดไป <b class="nx ${n.c.replace('st-','nx-')}">${esc(n.t)}</b></div></div>`;
+}
+function catImg(a,big){
+  const src=THUMB[a.kind+':'+a.id];
+  return src?`<img class="${big?'cd-pic':'mc-img'}" src="${src}" alt="${big?'โมเดลตัวอย่าง':''}" loading="lazy">`:`<span class="mc-ph">${ic(a.hd?'machine':'water')}</span>`;
+}
+function catCard(a){
+  const t=catType(a),hm=a.hd?hdOf(a.id):null,p=a.hd?null:portoOf(a.id),hs=HEALTH_SHORT[a.s.h],x=a.x;
+  const title=a.hd?'เครื่อง '+hm.no:p.short,sub=a.hd?'จุดจ่ายน้ำ '+hm.station+' · '+STATION_NAME[hm.station]:'RO เคลื่อนที่ · หน้าห้องระบบน้ำ',sn=a.hd?csSerialOf(hm.no):'';
+  const res=x?catRes('bac','C/S',x.lastCfu,x.lastCfu&&x.lastCfu.cfu,'CFU/mL',x.cfuSt,x.lastCfu&&x.lastCfu.file,x.bac)+catRes('vial','Endotoxin',x.lastEu,x.lastEu&&x.lastEu.eu,'EU/mL',x.euSt,x.lastEu&&x.lastEu.fileEu,x.endo)
+    :`<p class="mc-empty">${cs.state==='ok'?'ไม่พบเครื่องนี้ในแผนของแอปผล C/S':cs.state==='error'?'ดึงผลจากแอปผล C/S ไม่สำเร็จ':'กำลังโหลดผลจากแอปผล C/S…'}</p>`;
+  const f=a.s.f,fc=f&&f.state==='over'?'nx-bad':f&&f.state==='soon'?'nx-watch':'';
+  return `<article class="mc" style="--tone:${t.bg}">
+  <button type="button" class="mc-hit" data-mc="${a.kind}:${esc(a.id)}" aria-label="ดูผลเฉพาะ${esc(title)}"></button>
+  <div class="mc-top">${catImg(a)}<span class="mc-type">${esc(t.label)}</span><span class="mc-st st-${a.s.h}">${ic(ST_ICON[a.s.h])}${esc(hs[1])}</span></div>
+  <div class="mc-body"><div class="mc-name"><b>${esc(title)}</b><span>${esc(sub)}</span>${sn?`<span class="mc-sn">SN ${esc(sn)}</span>`:''}</div>${res}
+  ${a.hd?`<div class="mf ${fc}">${ic('filter')}<span>${esc(filterNext(a.s.m,f))}</span></div>`:''}</div></article>`;
+}
+function catOverview(){
+  const hd=HD_MACHINES.map(m=>catState('machine',m.no)),ro=PORTO.map(p=>catState('porto',p.id)),all=[...hd,...ro],n=h=>all.filter(a=>a.s.h===h).length;
+  const upd=cs.state==='ok'&&cs.recs[0]?'ผลล่าสุดในแอปผล C/S วันที่ '+thDate(cs.recs[0].date):'';
+  return `<header class="cat-head"><div class="cat-title"><h2>เครื่องไตเทียม และระบบน้ำเคลื่อนที่</h2>
+    <p>ผลเพาะเชื้อ (C/S) และ Endotoxin ล่าสุดของแต่ละเครื่อง ดึงจากแอปผล C/S${upd?' · '+esc(upd):''} · กดที่การ์ดเพื่อดูผลของเครื่องนั้นเครื่องเดียว</p></div>
+    <div class="cat-sum"><span class="sum">${ic('machine')}เครื่องไตเทียม <b>${hd.length}</b> เครื่อง</span><span class="sum">${ic('water')}ระบบน้ำ RO เคลื่อนที่ <b>${ro.length}</b> เครื่อง</span>${n('bad')?`<span class="sum s-bad">${ic('bad')}ต้องดำเนินการ <b>${n('bad')}</b></span>`:''}${n('watch')?`<span class="sum s-watch">${ic('warn')}เฝ้าระวัง <b>${n('watch')}</b></span>`:''}</div></header>
+  ${cs.state==='ok'?'':csNotice()}
+  <section class="cat-sec"><h3>${ic('machine')}เครื่องไตเทียม <span class="cnt">${hd.length} เครื่อง</span></h3><div class="cat-grid">${hd.map(catCard).join('')}</div></section>
+  <section class="cat-sec"><h3>${ic('water')}ระบบน้ำ RO เคลื่อนที่ <span class="cnt">${ro.length} เครื่อง</span></h3><div class="cat-grid">${ro.map(catCard).join('')}</div></section>
+  <p class="cat-foot">สีประเภทเครื่อง: <span class="tp" style="--tone:${BADGE.N.bg}">Normal</span> <span class="tp" style="--tone:${BADGE.Acute.bg}">Acute</span> <span class="tp" style="--tone:${BADGE.C.bg}">Hep C</span> <span class="tp" style="--tone:${BADGE.B.bg}">Hep B</span> · เกณฑ์ Dialysis fluid: เพาะเชื้อต่ำกว่า ${thresholds().dialysate.cfuMax} CFU/mL Endotoxin ต่ำกว่า ${thresholds().dialysate.euMax} EU/mL · น้ำ RO: เพาะเชื้อต่ำกว่า ${thresholds().water.cfuMax} CFU/mL Endotoxin ต่ำกว่า ${thresholds().water.euMax} EU/mL</p>`;
+}
+function catDetail(v){
+  const a=catState(v.kind,v.id),t=catType(a),hm=a.hd?hdOf(a.id):null,p=a.hd?null:portoOf(a.id);
+  if(a.hd&&!hm||!a.hd&&!p)return catOverview();
+  const title=a.hd?'เครื่องไตเทียม หมายเลข '+hm.no:p.name,hs=HEALTH_TXT[a.s.h],sn=a.hd?csSerialOf(hm.no):'',k=a.hd?'m':'p';
+  return `<button type="button" class="btn small cat-back" data-cat="back">← ภาพรวมเครื่องทั้งหมด</button>
+  <div class="cd" style="--tone:${t.bg}">
+    <aside class="cd-side"><div class="cd-imgbox">${catImg(a,true)}<span class="mc-type">${esc(t.label)}</span></div>
+      <h2>${esc(title)}</h2><p class="small">${a.hd?esc('จุดจ่ายน้ำ '+hm.station+' · '+STATION_NAME[hm.station]):'RO เคลื่อนที่ จอดหน้าห้องระบบน้ำ'}${sn?' · SN '+esc(sn):''}</p>
+      <span class="mc-st st-${a.s.h}">${ic(ST_ICON[a.s.h])}${esc(hs[1])}</span>
+      ${a.hd?`<p class="small cd-desc">${esc(BADGE[hm.badge].desc)}</p>`:''}
+      <div class="cd-act"><button type="button" class="btn" data-cat="model">${ic('cube')}ดูโมเดล 3 มิติ และแก้ไขข้อมูลเครื่อง</button>${csOpenBtn('บันทึกผลในแอปผล C/S','')}</div></aside>
+    <div class="cd-main">
+      <h3>${ic('bac')}ผลเพาะเชื้อและ Endotoxin ล่าสุด</h3>${eqResults(k,a.id)}
+      ${a.hd?`<h3>${ic('filter')}Bacteria filter หลังเครื่อง</h3>${filterBlock(a.s.m)}`:''}
+      <h3>${ic('cal')}แผนตรวจและประวัติผลของเครื่องนี้</h3>${csEquipBlock(k,a.id)}
+      <h3>${ic(a.hd?'machine':'water')}ข้อมูลเครื่อง</h3>${srDetails(a.hd?'hd':'ro',a.id,a.s.m)}
+    </div></div>`;
+}
+function renderCatalog(fromThumbs){
+  if(!equipOn)return;const C=$('#catalog'),top=C.scrollTop;
+  C.innerHTML=catView?catDetail(catView):catOverview();if(fromThumbs)C.scrollTop=top;
+  bindCatalog(C);
+  if(!fromThumbs&&has3D)setTimeout(()=>{if(equipOn&&buildThumbs())renderCatalog(true);},40);
+}
+function openModel(kind,id){
+  const m=kind==='machine'?linkedHD(id):linkedRO(id),url=EQUIP_PAGE+(m?'#/m/'+encodeURIComponent(m.id):'#/'),f=$('#eqFrame');
+  if(f.getAttribute('src')!==url)f.setAttribute('src',url);
+  $('#eqFTitle').textContent=(kind==='machine'?'เครื่องไตเทียม หมายเลข '+id:portoOf(id).name)+(m?'':' · ยังไม่ได้จับคู่ข้อมูลเครื่อง จึงเปิดหน้ารายการเครื่อง');
+  $('#eqFOpen').href=url;$('#eqFrameWrap').hidden=false;
+}
+function bindCatalog(C){
+  C.querySelectorAll('[data-mc]').forEach(b=>b.onclick=()=>{const [k,id]=b.dataset.mc.split(':');showEquip({kind:k,id});});
+  C.querySelectorAll('[data-cat="back"]').forEach(b=>b.onclick=()=>showEquip(null));
+  C.querySelectorAll('[data-cat="model"]').forEach(b=>b.onclick=()=>openModel(catView.kind,catView.id));
+  C.querySelectorAll('[data-act="reload"]').forEach(b=>b.onclick=()=>{b.disabled=true;loadLive();});
+  C.querySelectorAll('#srLink').forEach(sel=>sel.onchange=async()=>{const kind=sel.dataset.kind,key=sel.dataset.key,sk=kind==='hd'?'hdmap':'romap',map={...(setting(sk,{})||{})};
+    if(sel.value==='__auto')delete map[key];else map[key]=sel.value;
+    try{await save('saveSetting',{setting:{id:sk,value:JSON.stringify(map)}},'เชื่อมข้อมูลเครื่องแล้ว');if(has3D)applyLive3D();renderCatalog();}catch(e){toast('บันทึกไม่สำเร็จ: '+e.message);}});
+}
 
 </script>
 </body>

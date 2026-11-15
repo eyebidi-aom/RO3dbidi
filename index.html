@@ -976,7 +976,7 @@ async function loadCS(){
     try{d=JSON.parse(t);}catch{throw new Error(/^\s*</.test(t)?'แอปผล C/S ยังส่งข้อมูลให้ผังนี้ไม่ได้ วาง Code.gs ฉบับใหม่ แล้วทำให้ใช้งานได้ใหม่เป็นเวอร์ชันใหม่':'ลิงก์ไม่ได้ส่งข้อมูลกลับมาเป็น JSON');}
     if(!d||d.status==='error')throw new Error(d&&d.message||'แอปผล C/S ตอบกลับว่าเกิดข้อผิดพลาด');
     cs=csBuild(d);
-  }catch(e){cs={state:'error',locs:[],recs:[],results:[],events:[],pms:[],unmapped:[],err:e.message||String(e),cache:{}};}
+  }catch(e){const net=e instanceof TypeError;cs={state:'error',locs:[],recs:[],results:[],events:[],pms:[],unmapped:[],err:net?'แอปผล C/S ยังส่งข้อมูลให้ผังนี้ไม่ได้ ให้วาง Code.gs ฉบับใหม่ แล้วทำให้ใช้งานได้ใหม่เป็นเวอร์ชันใหม่ (ผู้มีสิทธิ์เข้าถึงต้องเป็น ทุกคน)':e.message||String(e),cache:{}};}
 }
 function csBuild(d){
   const locs=(d.plans||[]).filter(p=>String(p.Location||'').trim()).map(p=>{
